@@ -33,6 +33,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import Image from "next/image";
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -179,9 +180,16 @@ export default function UpdatedHeader({
 
             {/* Corporate Branding */}
             <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#0a2540] to-[#1e3a8a] rounded-xl flex items-center justify-center shadow-lg">
+              <Image
+                src="/logo_fradema2.png"
+                alt="Logo"
+                width={70}
+                height={35}
+                className=""
+              />
+              {/* <div className="w-10 h-10 bg-gradient-to-br from-[#0a2540] to-[#1e3a8a] rounded-xl flex items-center justify-center shadow-lg">
                 <Building2 className="w-6 h-6 text-white" />
-              </div>
+              </div> */}
               <div className="hidden sm:block">
                 <h1 className="text-xl font-bold text-slate-900 leading-tight">
                   Fradema
@@ -210,7 +218,7 @@ export default function UpdatedHeader({
 
             {/* Theme Toggle */}
             <DropdownMenu.Root>
-              <DropdownMenu.Trigger asChild>
+              {/* <DropdownMenu.Trigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -225,8 +233,8 @@ export default function UpdatedHeader({
                     <Monitor className="h-5 w-5" />
                   )}
                 </Button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Portal>
+              </DropdownMenu.Trigger> */}
+              {/* <DropdownMenu.Portal>
                 <DropdownMenu.Content className="min-w-[140px] bg-white rounded-lg shadow-xl border z-50">
                   <DropdownMenu.Item
                     className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 cursor-pointer"
@@ -250,7 +258,7 @@ export default function UpdatedHeader({
                     Sistema
                   </DropdownMenu.Item>
                 </DropdownMenu.Content>
-              </DropdownMenu.Portal>
+              </DropdownMenu.Portal> */}
             </DropdownMenu.Root>
 
             {/* Notifications */}
@@ -260,11 +268,11 @@ export default function UpdatedHeader({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="relative h-10 w-10 flex items-center justify-center"
+                    className="relative h-12 w-12 bg-blue-500/90 flex items-center justify-center"
                   >
-                    <Bell className="h-5 w-5" />
+                    <Bell className="h-9 w-9 mt-3" />
                     {unreadCount > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-medium leading-none">
+                      <span className="absolute top-1 right-1 h-5 w-5 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-medium leading-none">
                         {unreadCount > 9 ? "9+" : unreadCount}
                       </span>
                     )}
@@ -360,7 +368,7 @@ export default function UpdatedHeader({
             )}
 
             {/* User Menu */}
-            {isAuthenticated && user && (
+            {/* {isAuthenticated && user && (
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
                   <Button
@@ -426,7 +434,7 @@ export default function UpdatedHeader({
                   </DropdownMenu.Content>
                 </DropdownMenu.Portal>
               </DropdownMenu.Root>
-            )}
+            )} */}
           </div>
         </div>
       </div>

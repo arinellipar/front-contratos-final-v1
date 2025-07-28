@@ -1,5 +1,7 @@
 // frontend/src/hooks/useNotifications.ts
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { contractsApi } from "@/lib/api/contracts";
+import { Contract } from "@/lib/types/contract";
 
 interface Notification {
   id: string;
@@ -33,6 +35,7 @@ interface UseNotificationsReturn {
 /**
  * Hook robusto para gerenciamento de notificações com fallback para modo offline
  * Implementa padrão Circuit Breaker para conexões WebSocket
+ * Busca dados reais de contratos do banco de dados Azure
  */
 export function useNotifications(): UseNotificationsReturn {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -41,44 +44,159 @@ export function useNotifications(): UseNotificationsReturn {
     "disconnected" | "connecting" | "connected" | "failed"
   >("disconnected");
 
-  // Simulação de notificações para desenvolvimento
-  const mockNotifications: Notification[] = useMemo(
-    () => [
-      {
-        id: "1",
-        title: "Sistema Atualizado",
-        message: "O sistema foi atualizado com sucesso para a versão 2.0.0",
-        type: "success",
-        severity: 1,
-        timestamp: new Date(Date.now() - 3600000), // 1 hora atrás
-        read: false,
-        category: "system",
-      },
-      {
-        id: "2",
-        title: "Contrato Vencendo",
-        message: "O contrato #123 vence em 7 dias",
-        type: "warning",
-        severity: 2,
-        timestamp: new Date(Date.now() - 1800000), // 30 min atrás
-        read: false,
-        category: "business",
-        actionUrl: "/contracts/123",
-        actionLabel: "Ver Contrato",
-      },
-      {
-        id: "3",
-        title: "Backup Realizado",
-        message: "Backup dos dados realizado com sucesso",
-        type: "info",
-        severity: 0,
-        timestamp: new Date(Date.now() - 7200000), // 2 horas atrás
-        read: true,
-        category: "system",
-      },
-    ],
+  // Função para gerar notificações baseadas em contratos reais
+  const generateContractNotifications = useCallback(
+    (contracts: Contract[]): Notification[] => {
+      const now = new Date();
+      const notifications: Notification[] = [];
+
+      contracts.forEach((contract) => {
+        // Calcular data de vencimento
+        const contractDate = new Date(contract.dataContrato);
+        const expiryDate = new Date(contractDate);
+        expiryDate.setDate(expiryDate.getDate() + (contract.prazo || 365));
+
+        const daysUntilExpiry = Math.floor(
+          (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        // Notificação para contratos vencendo em breve (30 dias)
+        if (daysUntilExpiry > 0 && daysUntilExpiry <= 30) {
+          notifications.push({
+            id: `contract-expiring-${contract.id}`,
+            title: "Contrato Vencendo",
+            message: `O contrato ${contract.contrato} com ${contract.contratada} vence em ${daysUntilExpiry} dias`,
+            type: daysUntilExpiry <= 7 ? "error" : "warning",
+            severity: daysUntilExpiry <= 7 ? 3 : 2,
+            timestamp: new Date(),
+            read: false,
+            category: "business",
+            actionUrl: `/contracts/${contract.id}`,
+            actionLabel: "Ver Contrato",
+            metadata: {
+              contractId: contract.id,
+              contratada: contract.contratada,
+              daysUntilExpiry,
+              expiryDate: expiryDate.toISOString(),
+            },
+          });
+        }
+
+        // Notificação para contratos vencidos
+        if (daysUntilExpiry < 0) {
+          notifications.push({
+            id: `contract-expired-${contract.id}`,
+            title: "Contrato Vencido",
+            message: `O contrato ${contract.contrato} com ${contract.contratada} venceu há ${Math.abs(
+              daysUntilExpiry
+            )} dias`,
+            type: "critical",
+            severity: 4,
+            timestamp: new Date(),
+            read: false,
+            category: "business",
+            actionUrl: `/contracts/${contract.id}`,
+            actionLabel: "Renovar Contrato",
+            metadata: {
+              contractId: contract.id,
+              contratada: contract.contratada,
+              daysExpired: Math.abs(daysUntilExpiry),
+              expiryDate: expiryDate.toISOString(),
+            },
+          });
+        }
+
+        // Notificação para contratos com aviso prévio
+        if (contract.avisoPrevia && daysUntilExpiry > 0) {
+          const avisoPreviaDate = new Date(expiryDate);
+          avisoPreviaDate.setDate(
+            avisoPreviaDate.getDate() - contract.avisoPrevia
+          );
+          const daysUntilAvisoPrevia = Math.floor(
+            (avisoPreviaDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+          );
+
+          if (daysUntilAvisoPrevia >= 0 && daysUntilAvisoPrevia <= 7) {
+            notifications.push({
+              id: `contract-aviso-${contract.id}`,
+              title: "Aviso Prévio Próximo",
+              message: `Prazo de aviso prévio do contrato ${contract.contrato} se aproxima (${daysUntilAvisoPrevia} dias)`,
+              type: "info",
+              severity: 1,
+              timestamp: new Date(),
+              read: false,
+              category: "business",
+              actionUrl: `/contracts/${contract.id}`,
+              actionLabel: "Ver Detalhes",
+              metadata: {
+                contractId: contract.id,
+                avisoPrevia: contract.avisoPrevia,
+                daysUntilAvisoPrevia,
+              },
+            });
+          }
+        }
+      });
+
+      return notifications;
+    },
     []
   );
+
+  // Função para buscar estatísticas e gerar notificações do sistema
+  const generateSystemNotifications = useCallback(async (): Promise<
+    Notification[]
+  > => {
+    try {
+      const stats = await contractsApi.getStatistics();
+      const notifications: Notification[] = [];
+
+      // Notificação sobre total de contratos
+      if (stats.totalContracts > 0) {
+        notifications.push({
+          id: "system-total-contracts",
+          title: "Resumo de Contratos",
+          message: `Sistema gerenciando ${stats.totalContracts} contratos ativos`,
+          type: "info",
+          severity: 0,
+          timestamp: new Date(),
+          read: true,
+          category: "system",
+          metadata: {
+            totalContracts: stats.totalContracts,
+            contractsByCategory: stats.contractsByCategory,
+          },
+        });
+      }
+
+      // Notificações sobre contratos por categoria
+      Object.entries(stats.contractsByCategory).forEach(([category, count]) => {
+        if (count > 0) {
+          notifications.push({
+            id: `category-${category}`,
+            title: `Contratos de ${category}`,
+            message: `${count} contratos na categoria ${category}`,
+            type: "info",
+            severity: 0,
+            timestamp: new Date(),
+            read: true,
+            category: "business",
+            actionUrl: `/contracts?category=${category}`,
+            actionLabel: "Ver Contratos",
+            metadata: {
+              category,
+              count,
+            },
+          });
+        }
+      });
+
+      return notifications;
+    } catch (error) {
+      console.error("Erro ao gerar notificações do sistema:", error);
+      return [];
+    }
+  }, []);
 
   const loadCachedNotifications = useCallback((): Notification[] => {
     try {
@@ -98,51 +216,59 @@ export function useNotifications(): UseNotificationsReturn {
     return [];
   }, []);
 
-  const initializeNotificationSystem = useCallback(() => {
+  const initializeNotificationSystem = useCallback(async () => {
     setIsLoading(true);
 
-    // Implementação Circuit Breaker Pattern
-    const attemptConnection = async () => {
-      try {
-        setConnectionState("connecting");
+    try {
+      setConnectionState("connecting");
 
-        // Simula tentativa de conexão
-        await new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            // Se WebSocket não conectar em 5s, usar modo offline
-            reject(new Error("Connection timeout"));
-          }, 5000);
+      // Buscar contratos reais do banco de dados
+      const [contractsResponse, systemNotifications] = await Promise.all([
+        contractsApi.getAll({ pageSize: 1000, sortBy: "dataVencimento" }),
+        generateSystemNotifications(),
+      ]);
 
-          // Simula sucesso da conexão (em produção, usar WebSocket real)
-          setTimeout(() => {
-            clearTimeout(timeout);
-            resolve(true);
-          }, 1000);
-        });
+      // Filtrar apenas contratos ativos
+      const activeContracts = contractsResponse.data.filter(
+        (contract) => contract.status === 1
+      );
 
-        setConnectionState("connected");
-        setNotifications(mockNotifications); // Carregar notificações reais da API
-      } catch (error) {
-        console.warn(
-          "Notifications WebSocket failed, using offline mode:",
-          error
-        );
-        setConnectionState("failed");
+      // Gerar notificações baseadas nos contratos reais
+      const contractNotifications =
+        generateContractNotifications(activeContracts);
 
-        // Fallback para notificações locais/cache
-        const cachedNotifications = loadCachedNotifications();
-        setNotifications(
-          cachedNotifications.length > 0
-            ? cachedNotifications
-            : mockNotifications
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      // Combinar todas as notificações
+      const allNotifications = [
+        ...contractNotifications,
+        ...systemNotifications,
+      ];
 
-    attemptConnection();
-  }, [loadCachedNotifications, mockNotifications]);
+      // Ordenar por timestamp (mais recentes primeiro)
+      allNotifications.sort(
+        (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+      );
+
+      setConnectionState("connected");
+      setNotifications(allNotifications);
+      saveCachedNotifications(allNotifications);
+    } catch (error) {
+      console.warn(
+        "Failed to load notifications from Azure DB, using cached data:",
+        error
+      );
+      setConnectionState("failed");
+
+      // Fallback para notificações em cache
+      const cachedNotifications = loadCachedNotifications();
+      setNotifications(cachedNotifications);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    generateContractNotifications,
+    generateSystemNotifications,
+    loadCachedNotifications,
+  ]);
 
   const saveCachedNotifications = useCallback(
     (notifications: Notification[]) => {
@@ -160,17 +286,19 @@ export function useNotifications(): UseNotificationsReturn {
     []
   );
 
-  // Inicialização com dados mock em desenvolvimento
+  // Atualizar notificações periodicamente (a cada 5 minutos)
   useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
-      setNotifications(mockNotifications);
-      setIsLoading(false);
-      setConnectionState("connected"); // Simula conexão bem-sucedida
-    } else {
-      // Em produção, implementar lógica real de WebSocket com fallback
-      initializeNotificationSystem();
-    }
-  }, [mockNotifications, initializeNotificationSystem]);
+    initializeNotificationSystem();
+
+    const interval = setInterval(
+      () => {
+        initializeNotificationSystem();
+      },
+      5 * 60 * 1000
+    ); // 5 minutos
+
+    return () => clearInterval(interval);
+  }, [initializeNotificationSystem]);
 
   const markAsRead = useCallback(
     (id: string) => {
