@@ -1,0 +1,492 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Modern Corporate Color System 2025 - Deep Navy & Pure White */
+    --background: 0 0% 100%;
+    /* Pure white for maximum contrast and modern clean look */
+    --foreground: 220 90% 8%;
+    /* Deep navy for text (#0a0f1c) */
+
+    /* Card system with subtle depth */
+    --card: 0 0% 100%;
+    --card-foreground: 220 90% 8%;
+
+    /* Popover system with enhanced contrast */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 90% 8%;
+
+    /* Primary brand - Deep Corporate Navy */
+    --primary: 220 90% 12%;
+    /* Deep navy (#0d1628) */
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Light modern gray */
+    --secondary: 220 20% 97%;
+    /* Light gray with blue undertone */
+    --secondary-foreground: 220 90% 8%;
+
+    /* Muted elements - Sophisticated grays */
+    --muted: 220 20% 96%;
+    --muted-foreground: 220 40% 25%;
+
+    /* Accent colors - Modern blue */
+    --accent: 220 70% 95%;
+    --accent-foreground: 220 90% 12%;
+
+    /* Destructive - Modern red with better contrast */
+    --destructive: 0 85% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* UI borders and inputs - Subtle with blue undertone */
+    --border: 220 30% 90%;
+    --input: 220 30% 88%;
+    --ring: 220 90% 12%;
+
+    /* Enhanced radius for 2025 modern feel */
+    --radius: 0.875rem;
+
+    /* Chart colors - Corporate blue palette */
+    --chart-1: 220 90% 12%;
+    /* Deep navy */
+    --chart-2: 220 80% 20%;
+    /* Medium navy */
+    --chart-3: 220 70% 35%;
+    /* Steel blue */
+    --chart-4: 220 60% 50%;
+    /* Corporate blue */
+    --chart-5: 220 50% 65%;
+    /* Light blue */
+
+    /* Custom enterprise colors for 2025 */
+    --navy-50: 220 70% 98%;
+    --navy-100: 220 60% 95%;
+    --navy-200: 220 50% 88%;
+    --navy-300: 220 45% 78%;
+    --navy-400: 220 40% 65%;
+    --navy-500: 220 50% 50%;
+    --navy-600: 220 70% 35%;
+    --navy-700: 220 80% 25%;
+    --navy-800: 220 85% 16%;
+    --navy-900: 220 90% 12%;
+    --navy-950: 220 90% 8%;
+
+    /* Glassmorphism variables */
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(220, 230, 240, 0.3);
+    --glass-shadow: 0 8px 32px rgba(13, 22, 40, 0.08);
+
+    /* Modern shadows for depth */
+    --shadow-sm: 0 1px 2px 0 rgba(13, 22, 40, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(13, 22, 40, 0.1), 0 2px 4px -1px rgba(13, 22, 40, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(13, 22, 40, 0.1), 0 4px 6px -2px rgba(13, 22, 40, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(13, 22, 40, 0.1), 0 10px 10px -5px rgba(13, 22, 40, 0.04);
+  }
+
+  .dark {
+    /* Dark mode with inverted navy/white relationship */
+    --background: 220 90% 8%;
+    --foreground: 0 0% 98%;
+
+    --card: 220 85% 10%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 220 85% 10%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 0 0% 98%;
+    --primary-foreground: 220 90% 8%;
+
+    --secondary: 220 50% 15%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 220 50% 12%;
+    --muted-foreground: 220 20% 70%;
+
+    --accent: 220 50% 15%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 75% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 50% 18%;
+    --input: 220 50% 18%;
+    --ring: 0 0% 98%;
+
+    /* Dark mode glassmorphism */
+    --glass-bg: rgba(13, 22, 40, 0.85);
+    --glass-border: rgba(100, 116, 139, 0.2);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1, "cv01" 1;
+    /* Enhanced typography features */
+  }
+
+  /* Enhanced focus states for accessibility and modern feel */
+  *:focus {
+    @apply outline-none;
+  }
+
+  *:focus-visible {
+    @apply ring-2 ring-primary/20 ring-offset-2 ring-offset-background;
+    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--primary) / 0.2);
+  }
+
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Selection colors */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.2);
+    color: hsl(var(--primary));
+  }
+}
+
+@layer components {
+
+  /* 2025 Enterprise Gradient System */
+  .gradient-primary {
+    background: linear-gradient(135deg,
+        hsl(var(--navy-900)) 0%,
+        hsl(var(--navy-800)) 50%,
+        hsl(var(--navy-700)) 100%);
+  }
+
+  .gradient-secondary {
+    background: linear-gradient(135deg,
+        hsl(var(--navy-50)) 0%,
+        hsl(var(--navy-100)) 100%);
+  }
+
+  .gradient-radial {
+    background: radial-gradient(ellipse at center,
+        hsl(var(--navy-50)) 0%,
+        hsl(var(--background)) 70%);
+  }
+
+  /* Modern Glassmorphism Effects */
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(220, 230, 240, 0.4);
+    box-shadow: 0 12px 40px rgba(13, 22, 40, 0.15);
+    backdrop-filter: blur(24px) saturate(200%);
+  }
+
+  /* Enterprise Card System 2025 */
+  .card-modern {
+    @apply bg-white rounded-2xl border border-navy-100 shadow-md hover:shadow-xl transition-all duration-300;
+    box-shadow: var(--shadow-md);
+  }
+
+  .card-elevated {
+    @apply bg-white rounded-2xl border-0 shadow-xl hover:shadow-2xl transition-all duration-300;
+    box-shadow: var(--shadow-xl);
+    transform: translateY(0);
+  }
+
+  .card-elevated:hover {
+    transform: translateY(-2px);
+  }
+
+  .card-interactive {
+    @apply card-modern cursor-pointer active:scale-[0.98] transition-transform duration-150;
+  }
+
+  /* Modern Button System */
+  .btn-primary-2025 {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200;
+    background: linear-gradient(135deg, hsl(var(--navy-900)), hsl(var(--navy-800)));
+    box-shadow: 0 4px 12px rgba(13, 22, 40, 0.25);
+  }
+
+  .btn-primary-2025:hover {
+    background: linear-gradient(135deg, hsl(var(--navy-800)), hsl(var(--navy-700)));
+    box-shadow: 0 6px 16px rgba(13, 22, 40, 0.35);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary-2025 {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200;
+    background: hsl(var(--navy-50));
+    color: hsl(var(--navy-900));
+    border: 1px solid hsl(var(--navy-200));
+  }
+
+  .btn-secondary-2025:hover {
+    background: hsl(var(--navy-100));
+    border-color: hsl(var(--navy-300));
+    transform: translateY(-1px);
+  }
+
+  /* Modern Navigation Styles */
+  .nav-item-2025 {
+    @apply relative px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200;
+    @apply text-navy-600 hover:text-navy-900 hover:bg-navy-50;
+  }
+
+  .nav-item-2025.active {
+    @apply text-navy-900 bg-navy-100 shadow-sm;
+    background: linear-gradient(135deg, hsl(var(--navy-50)), hsl(var(--navy-100)));
+  }
+
+  .nav-item-2025.active::before {
+    content: '';
+    @apply absolute left-0 top-1/2 w-1 h-8 bg-navy-900 rounded-r-full;
+    transform: translateY(-50%);
+  }
+
+  /* Enhanced Table System */
+  .table-modern {
+    @apply w-full bg-white rounded-2xl overflow-hidden border border-navy-100;
+    box-shadow: var(--shadow-md);
+  }
+
+  .table-modern thead {
+    background: linear-gradient(135deg, hsl(var(--navy-50)), hsl(var(--navy-100)));
+    @apply border-b border-navy-200;
+  }
+
+  .table-modern th {
+    @apply px-6 py-4 text-left text-xs font-bold text-navy-800 uppercase tracking-wider;
+  }
+
+  .table-modern td {
+    @apply px-6 py-4 text-sm text-navy-700 border-b border-navy-100;
+  }
+
+  .table-modern tbody tr {
+    @apply hover:bg-navy-25 transition-colors duration-150;
+  }
+
+  .table-modern tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  /* Modern Form Elements */
+  .input-modern {
+    @apply w-full px-4 py-3 bg-white border border-navy-200 rounded-xl;
+    @apply text-navy-900 placeholder-navy-400;
+    @apply focus:outline-none focus:ring-2 focus:ring-navy-500/20 focus:border-navy-500;
+    @apply transition-all duration-200;
+    box-shadow: 0 1px 3px rgba(13, 22, 40, 0.05);
+  }
+
+  .input-modern:focus {
+    box-shadow: 0 2px 8px rgba(13, 22, 40, 0.1), 0 0 0 3px rgba(13, 22, 40, 0.1);
+  }
+
+  /* Enhanced Scrollbar */
+  .scrollbar-modern {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--navy-300)) transparent;
+  }
+
+  .scrollbar-modern::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-modern::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-modern::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--navy-300));
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background-clip: content-box;
+  }
+
+  .scrollbar-modern::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--navy-400));
+  }
+
+  /* Professional animations for 2025 */
+  @keyframes slideInFromTop {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInFromLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fadeInScale {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200px 0;
+    }
+
+    100% {
+      background-position: 200px 0;
+    }
+  }
+
+  .animate-slide-in-top {
+    animation: slideInFromTop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .animate-slide-in-left {
+    animation: slideInFromLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .animate-fade-in-scale {
+    animation: fadeInScale 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(90deg,
+        hsl(var(--navy-100)) 0%,
+        hsl(var(--navy-200)) 50%,
+        hsl(var(--navy-100)) 100%);
+    background-size: 400px 100%;
+  }
+
+  /* Status indicators with modern colors */
+  .status-dot {
+    @apply inline-block w-2.5 h-2.5 rounded-full;
+  }
+
+  .status-dot-success {
+    @apply bg-emerald-500;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  }
+
+  .status-dot-warning {
+    @apply bg-amber-500;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+  }
+
+  .status-dot-error {
+    @apply bg-red-500;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+  }
+
+  .status-dot-info {
+    @apply bg-blue-500;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+
+  /* Modern shadows system */
+  .shadow-soft {
+    box-shadow: var(--shadow-sm);
+  }
+
+  .shadow-medium {
+    box-shadow: var(--shadow-md);
+  }
+
+  .shadow-strong {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .shadow-intense {
+    box-shadow: var(--shadow-xl);
+  }
+
+  /* Loading states with modern aesthetics */
+  .skeleton {
+    @apply animate-shimmer rounded-lg;
+    background: linear-gradient(90deg,
+        hsl(var(--navy-100)) 0%,
+        hsl(var(--navy-200)) 50%,
+        hsl(var(--navy-100)) 100%);
+    background-size: 400px 100%;
+  }
+
+  /* Print optimizations */
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+
+    body {
+      @apply bg-white text-black;
+    }
+
+    .card-modern,
+    .card-elevated {
+      @apply shadow-none border-gray-300;
+    }
+
+    .glass,
+    .glass-strong {
+      background: white;
+      border: 1px solid #e5e7eb;
+      backdrop-filter: none;
+    }
+  }
+}
+
+/* Modern CSS Custom Properties for Dynamic Theming */
+.theme-corporate {
+  --accent-primary: hsl(var(--navy-900));
+  --accent-secondary: hsl(var(--navy-100));
+  --accent-tertiary: hsl(var(--navy-50));
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border: 220 50% 70%;
+    --input: 220 50% 70%;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
