@@ -248,7 +248,9 @@ export const contractsApi = {
    * Deletes a contract
    */
   async delete(id: number): Promise<void> {
+    console.log("🔴 contractsApi.delete called with ID:", id);
     const result = await apiClient.delete<void>(`/contracts/${id}`);
+    console.log("✅ contractsApi.delete completed successfully");
     return result;
   },
 

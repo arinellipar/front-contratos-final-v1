@@ -49,7 +49,10 @@ export function ContractTable({
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const handleDelete = async (id: number) => {
+    console.log("🔴 Delete button clicked for contract ID:", id);
+
     if (!onDelete) {
+      console.error("❌ onDelete function is not available");
       toast.error("Função de exclusão não está disponível");
       return;
     }
@@ -59,13 +62,16 @@ export function ContractTable({
     );
 
     if (!confirmed) {
+      console.log("❌ User cancelled deletion");
       return;
     }
 
+    console.log("✅ User confirmed deletion, calling onDelete...");
     setDeletingId(id);
-    
+
     try {
       await onDelete(id);
+      console.log("✅ onDelete completed successfully");
     } catch (error) {
       console.error("❌ ContractTable: Erro ao excluir contrato:", error);
       toast.error(`Erro ao excluir contrato: ${(error as Error).message}`);
@@ -84,8 +90,9 @@ export function ContractTable({
 
     try {
       const blob = await contractsApi.downloadPdf(contract.id);
-      const fileName = contract.arquivoPdfNomeOriginal || `contrato_${contract.id}.pdf`;
-      
+      const fileName =
+        contract.arquivoPdfNomeOriginal || `contrato_${contract.id}.pdf`;
+
       saveAs(blob, fileName);
       toast.success("Download concluído!", { id: toastId });
     } catch (error) {
@@ -135,7 +142,10 @@ export function ContractTable({
     <div className="w-full">
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table
+          className="min-w-full divide-y divide-gray-200"
+          style={{ position: "relative", zIndex: 1 }}
+        >
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -187,6 +197,12 @@ export function ContractTable({
                 <tr
                   key={contract.id}
                   className="hover:bg-gray-50 transition-colors"
+                  onClick={() => {
+                    console.log(
+                      "🔴 Table row clicked for contract:",
+                      contract.id
+                    );
+                  }}
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {formatDate(contract.dataContrato)}
@@ -236,28 +252,92 @@ export function ContractTable({
                       <span className="text-gray-400 text-xs">—</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end gap-2">
+                  <td
+                    className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                    style={{ position: "relative", zIndex: 5 }}
+                  >
+                    <div
+                      className="flex items-center justify-end gap-2"
+                      onClick={() => {
+                        console.log(
+                          "🔴 Actions cell clicked for contract:",
+                          contract.id
+                        );
+                      }}
+                      style={{ position: "relative", zIndex: 5 }}
+                    >
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => router.push(`/dashboard/${contract.id}/edit`)}
+                        onClick={() =>
+                          router.push(`/dashboard/${contract.id}/edit`)
+                        }
                         className="text-blue-600 hover:text-blue-700"
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(contract.id)}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          console.log("🔴 Button clicked directly!");
+                          console.log("🔴 Event target:", e.target);
+                          console.log(
+                            "🔴 Event currentTarget:",
+                            e.currentTarget
+                          );
+                          console.log("🔴 Event type:", e.type);
+                          console.log("🔴 Event bubbles:", e.bubbles);
+                          console.log("🔴 Event cancelable:", e.cancelable);
+                          console.log(
+                            "🔴 Event defaultPrevented:",
+                            e.defaultPrevented
+                          );
+                          console.log("🔴 Event timeStamp:", e.timeStamp);
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDelete(contract.id);
+                        }}
+                        onMouseDown={(e) => {
+                          console.log("🔴 Button mousedown detected!");
+                        }}
+                        onMouseUp={(e) => {
+                          console.log("🔴 Button mouseup detected!");
+                        }}
+                        onTouchStart={(e) => {
+                          console.log("🔴 Button touchstart detected!");
+                        }}
                         disabled={deletingId === contract.id}
-                        className="inline-flex items-center justify-center p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none relative z-50"
-                        style={{ position: 'relative', zIndex: 50, pointerEvents: 'auto' }}
+                        className="text-red-600 hover:text-red-700 relative z-10"
+                        style={{
+                          position: "relative",
+                          zIndex: 10,
+                          pointerEvents: "auto",
+                          cursor: "pointer",
+                        }}
                       >
                         {deletingId === contract.id ? (
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
                         ) : (
                           <Trash2 className="w-4 h-4" />
                         )}
+                      </Button>
+
+                      {/* Botão de teste temporário */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          console.log(
+                            "🧪 Test button clicked for contract:",
+                            contract.id
+                          );
+                          alert(
+                            `Teste: Clique detectado para contrato ${contract.id}`
+                          );
+                        }}
+                        className="inline-flex items-center justify-center p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                      >
+                        🧪
                       </button>
                     </div>
                   </td>

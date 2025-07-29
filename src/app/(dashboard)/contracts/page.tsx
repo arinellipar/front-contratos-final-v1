@@ -1,7 +1,7 @@
 // frontend/src/app/(dashboard)/contracts/page.tsx
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { contractsApi } from "@/lib/api/contracts";
@@ -64,6 +64,11 @@ export default function ContractsPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [contractToDelete, setContractToDelete] = useState<number | null>(null);
 
+  // Monitorar mudanças no estado contractToDelete
+  useEffect(() => {
+    console.log("🔴 contractToDelete changed to:", contractToDelete);
+  }, [contractToDelete]);
+
   // Query para buscar contratos
   const {
     data: contractsResponse,
@@ -92,8 +97,12 @@ export default function ContractsPage() {
 
   // Mutation para deletar contrato
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => contractsApi.delete(id),
+    mutationFn: (id: number) => {
+      console.log("🔴 deleteMutation.mutationFn called with ID:", id);
+      return contractsApi.delete(id);
+    },
     onSuccess: () => {
+      console.log("✅ deleteMutation.onSuccess called");
       toast.success("Contrato excluído com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
       queryClient.invalidateQueries({ queryKey: ["contracts-stats"] });
@@ -102,7 +111,7 @@ export default function ContractsPage() {
       setContractToDelete(null);
     },
     onError: (error: any) => {
-      console.error("Erro ao excluir contrato:", error);
+      console.error("❌ deleteMutation.onError called:", error);
       toast.error(
         error?.response?.data?.message ||
           "Erro ao excluir contrato. Tente novamente."
@@ -165,19 +174,31 @@ export default function ContractsPage() {
 
   const handleDeleteContract = useCallback(
     async (id: number) => {
+      console.log("🔴 handleDeleteContract called with ID:", id);
+
       if (!hasPermission("contracts:delete")) {
+        console.error("❌ User doesn't have delete permission");
         toast.error("Você não tem permissão para excluir contratos");
         return;
       }
 
+      console.log("✅ User has permission, setting contractToDelete to:", id);
       setContractToDelete(id);
     },
     [hasPermission]
   );
 
   const confirmDelete = useCallback(() => {
+    console.log("🔴 confirmDelete called, contractToDelete:", contractToDelete);
+
     if (contractToDelete) {
+      console.log(
+        "✅ Calling deleteMutation.mutate with ID:",
+        contractToDelete
+      );
       deleteMutation.mutate(contractToDelete);
+    } else {
+      console.error("❌ contractToDelete is null or undefined");
     }
   }, [contractToDelete, deleteMutation]);
 
@@ -459,11 +480,7 @@ export default function ContractsPage() {
             totalPages={totalPages}
             currentPage={filters.page || 1}
             onPageChange={handlePageChange}
-            onDelete={
-              hasPermission("contracts:delete")
-                ? handleDeleteContract
-                : undefined
-            }
+            onDelete={handleDeleteContract}
             pageSize={filters.pageSize}
             totalItems={totalItems}
           />
@@ -473,7 +490,13 @@ export default function ContractsPage() {
       {/* Dialog de confirmação de exclusão */}
       <AlertDialog
         open={contractToDelete !== null}
-        onOpenChange={() => setContractToDelete(null)}
+        onOpenChange={() => {
+          console.log(
+            "🔴 AlertDialog onOpenChange called, contractToDelete:",
+            contractToDelete
+          );
+          setContractToDelete(null);
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -485,11 +508,19 @@ export default function ContractsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setContractToDelete(null)}>
+            <AlertDialogCancel
+              onClick={() => {
+                console.log("🔴 Cancel button clicked");
+                setContractToDelete(null);
+              }}
+            >
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDelete}
+              onClick={() => {
+                console.log("🔴 Confirm button clicked");
+                confirmDelete();
+              }}
               className="bg-red-600 hover:bg-red-700"
               disabled={deleteMutation.isPending}
             >
