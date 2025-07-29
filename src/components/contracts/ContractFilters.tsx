@@ -68,12 +68,16 @@ const useFilterState = (
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Debounced search input for performance optimization
-  const debouncedSearch = useDebounced(localFilters.contratante || "", 500);
+  const debouncedSearch = useDebounced(localFilters.searchTerm || "", 500);
 
   // Effect to sync debounced search with parent state
   useEffect(() => {
     if (debouncedSearch !== undefined) {
-      onFilterChange({ contratante: debouncedSearch || undefined });
+      console.log(
+        "🔍 Frontend: Executando busca geral com termo:",
+        debouncedSearch
+      );
+      onFilterChange({ searchTerm: debouncedSearch || undefined });
     }
   }, [debouncedSearch, onFilterChange]);
 
@@ -89,6 +93,7 @@ const useFilterState = (
   // Memoized active filters count for performance
   const activeFiltersCount = useMemo(() => {
     const activeKeys = [
+      "searchTerm",
       "contratante",
       "dataInicio",
       "dataFim",
@@ -142,6 +147,7 @@ export function ContractFilters({
   // Optimized reset handler with batch updates
   const handleReset = useCallback(() => {
     const resetFilters = {
+      searchTerm: "",
       contratante: "",
       dataInicio: undefined,
       dataFim: undefined,
@@ -157,7 +163,7 @@ export function ContractFilters({
   // Performance-optimized search input handler
   const handleSearchChange = useCallback(
     (value: string) => {
-      setLocalFilters((prev) => ({ ...prev, contratante: value }));
+      setLocalFilters((prev) => ({ ...prev, searchTerm: value }));
     },
     [setLocalFilters]
   );
@@ -186,6 +192,14 @@ export function ContractFilters({
     if (activeFiltersCount === 0) return null;
 
     const activeFilters = [];
+
+    if (localFilters.searchTerm) {
+      activeFilters.push({
+        key: "searchTerm",
+        label: `Busca: "${localFilters.searchTerm}"`,
+        remove: () => updateFilter({ searchTerm: "" }),
+      });
+    }
 
     if (localFilters.contratante) {
       activeFilters.push({
@@ -316,16 +330,16 @@ export function ContractFilters({
             htmlFor="quickSearch"
             className="text-sm font-medium mb-2 block"
           >
-            Pesquisa Rápida
+            Busca Geral
           </Label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
               id="quickSearch"
               type="text"
-              value={localFilters.contratante || ""}
+              value={localFilters.searchTerm || ""}
               onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Buscar por contratante..."
+              placeholder="Buscar por contrato, contratante, contratada, objeto, filial..."
               className="pl-10"
             />
           </div>

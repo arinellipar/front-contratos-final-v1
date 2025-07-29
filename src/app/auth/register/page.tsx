@@ -47,7 +47,11 @@ const registerSchema = z
     password: z
       .string()
       .min(8, "Senha deve ter pelo menos 8 caracteres")
-      .max(128, "Senha muito longa"),
+      .max(128, "Senha muito longa")
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+        "Senha deve conter pelo menos: 1 letra minúscula, 1 maiúscula, 1 número e 1 símbolo"
+      ),
     confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
     acceptTerms: z
       .boolean()
@@ -87,15 +91,8 @@ export default function RegisterPage() {
     if (/\d/.test(password)) strength++;
     if (/[@$!%*?&]/.test(password)) strength++;
 
-    const labels = [
-      "Muito Fraca",
-      "Fraca",
-      "Regular",
-      "Boa",
-      "Forte",
-      "Muito Forte",
-    ];
-
+    const labels = ["Muito Fraca", "Fraca", "Regular", "Boa", "Forte", "Muito Forte"];
+    
     return {
       score: strength,
       label: labels[Math.min(strength, labels.length - 1)] || "Muito Fraca",

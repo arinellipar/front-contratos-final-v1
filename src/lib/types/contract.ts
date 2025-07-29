@@ -94,6 +94,7 @@ export interface ContractUpdateDto {
  * Contract filtering options for API queries
  */
 export interface ContractFilters {
+  searchTerm?: string; // Busca geral por qualquer campo
   contratante?: string;
   dataInicio?: string; // ISO date string
   dataFim?: string; // ISO date string
