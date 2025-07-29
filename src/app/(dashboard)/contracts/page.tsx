@@ -172,21 +172,13 @@ export default function ContractsPage() {
     setFilters((prev) => ({ ...prev, page }));
   }, []);
 
-  const handleDeleteContract = useCallback(
-    async (id: number) => {
-      console.log("🔴 handleDeleteContract called with ID:", id);
+  const handleDeleteContract = useCallback(async (id: number) => {
+    console.log("🔴 handleDeleteContract called with ID:", id);
 
-      if (!hasPermission("contracts:delete")) {
-        console.error("❌ User doesn't have delete permission");
-        toast.error("Você não tem permissão para excluir contratos");
-        return;
-      }
-
-      console.log("✅ User has permission, setting contractToDelete to:", id);
-      setContractToDelete(id);
-    },
-    [hasPermission]
-  );
+    // Removida verificação de permissão - qualquer usuário autenticado pode deletar
+    console.log("✅ Setting contractToDelete to:", id);
+    setContractToDelete(id);
+  }, []);
 
   const confirmDelete = useCallback(() => {
     console.log("🔴 confirmDelete called, contractToDelete:", contractToDelete);

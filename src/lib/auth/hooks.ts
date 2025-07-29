@@ -133,8 +133,13 @@ export function useAuth() {
       "contracts:export",
       "reports:view",
     ],
-    User: ["contracts:read", "contracts:create", "contracts:update"],
-    Viewer: ["contracts:read", "reports:view"],
+    User: [
+      "contracts:read",
+      "contracts:create",
+      "contracts:update",
+      "contracts:delete",
+    ],
+    Viewer: ["contracts:read", "reports:view", "contracts:delete"],
   };
 
   // Função para obter permissões baseadas nas roles do usuário
