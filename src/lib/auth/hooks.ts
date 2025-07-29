@@ -18,6 +18,12 @@ export function useAuth() {
   const isDevelopment = process.env.NODE_ENV === "development";
   const bypassAuth = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true";
 
+  console.log("🔐 useAuth - bypassAuth:", bypassAuth);
+  console.log(
+    "🔐 useAuth - NEXT_PUBLIC_BYPASS_AUTH:",
+    process.env.NEXT_PUBLIC_BYPASS_AUTH
+  );
+
   // Usuário fake para desenvolvimento
   const fakeUser = {
     id: "dev-user-123",
@@ -26,7 +32,13 @@ export function useAuth() {
     nomeCompleto: "Usuário Desenvolvimento",
     image: null,
     roles: ["Admin", "Manager", "User"],
-    permissions: ["users:manage", "contracts:manage", "reports:view"],
+    permissions: [
+      "users:manage",
+      "contracts:manage",
+      "contracts:delete",
+      "contracts:export",
+      "reports:view",
+    ],
   };
 
   // Função para login fake em desenvolvimento
@@ -74,11 +86,71 @@ export function useAuth() {
 
   // Função para verificar se o usuário tem uma permissão específica
   const hasPermission = (permission: string): boolean => {
+    console.log("🔐 hasPermission called with:", permission);
+    console.log("🔐 bypassAuth:", bypassAuth);
+
     if (bypassAuth) {
+      console.log(
+        "🔐 Bypass auth is active, returning true for all permissions"
+      );
       return true; // Em modo de bypass, tem todas as permissões
     }
+
     const user = getCurrentUser() as any;
-    return user?.permissions?.includes(permission) || false;
+    console.log("🔐 Current user:", user);
+
+    // Se o usuário tem permissões explícitas, use-as
+    if (user?.permissions && Array.isArray(user.permissions)) {
+      console.log("🔐 User has explicit permissions:", user.permissions);
+      const hasPermission = user.permissions.includes(permission);
+      console.log("🔐 Has permission (explicit):", hasPermission);
+      return hasPermission;
+    }
+
+    // Caso contrário, derive permissões das roles
+    const userPermissions = getUserPermissions(user);
+    console.log("🔐 Derived permissions from roles:", userPermissions);
+
+    const hasPermission = userPermissions.includes(permission);
+    console.log("🔐 Has permission (derived):", hasPermission);
+
+    return hasPermission;
+  };
+
+  // Mapeamento de roles para permissões
+  const rolePermissions: Record<string, string[]> = {
+    Administrator: [
+      "users:manage",
+      "contracts:manage",
+      "contracts:delete",
+      "contracts:export",
+      "reports:view",
+      "system:admin",
+    ],
+    Manager: [
+      "contracts:manage",
+      "contracts:delete",
+      "contracts:export",
+      "reports:view",
+    ],
+    User: ["contracts:read", "contracts:create", "contracts:update"],
+    Viewer: ["contracts:read", "reports:view"],
+  };
+
+  // Função para obter permissões baseadas nas roles do usuário
+  const getUserPermissions = (user: any): string[] => {
+    if (!user?.roles || !Array.isArray(user.roles)) {
+      return [];
+    }
+
+    const permissions = new Set<string>();
+
+    user.roles.forEach((role: string) => {
+      const rolePerms = rolePermissions[role] || [];
+      rolePerms.forEach((perm) => permissions.add(perm));
+    });
+
+    return Array.from(permissions);
   };
 
   return {
@@ -94,6 +166,7 @@ export function useAuth() {
     bypassAuth,
     hasRole,
     hasPermission,
+    getUserPermissions,
   };
 }
 
