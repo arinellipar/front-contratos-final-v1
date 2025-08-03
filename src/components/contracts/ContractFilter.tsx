@@ -2,7 +2,10 @@
 "use client";
 
 import { useState } from "react";
-import { ContractCategory, ContractFilters as IContractFilters } from "@/lib/types/contract";
+import {
+  ContractCategory,
+  ContractFilters as IContractFilters,
+} from "@/lib/types/contract";
 import { Button } from "@/components/ui/Button";
 import { Search, Filter, X, Download } from "lucide-react";
 
@@ -46,26 +49,6 @@ export function ContractFilters({
           <Filter className="w-5 h-5 mr-2" />
           Filtros de Pesquisa
         </h3>
-        <div className="flex items-center gap-2">
-          {onExport && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onExport}
-              disabled={isExporting}
-              leftIcon={<Download className="w-4 h-4" />}
-            >
-              {isExporting ? "Exportando..." : "Exportar Excel"}
-            </Button>
-          )}
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? "Ocultar" : "Mostrar"} filtros
-          </Button>
-        </div>
       </div>
 
       {isExpanded && (
@@ -98,7 +81,9 @@ export function ContractFilters({
               <select
                 value={filters.categoriaContrato || ""}
                 onChange={(e) =>
-                  onFilterChange({ categoriaContrato: e.target.value as ContractCategory })
+                  onFilterChange({
+                    categoriaContrato: e.target.value as ContractCategory,
+                  })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >

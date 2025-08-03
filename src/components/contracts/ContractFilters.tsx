@@ -284,33 +284,6 @@ export function ContractFilters({
               </Badge>
             )}
           </div>
-
-          <div className="flex items-center gap-2">
-            {/* Export Button */}
-            {onExport && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onExport}
-                disabled={isExporting}
-                className="flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                {isExporting ? "Exportando..." : "Exportar Excel"}
-              </Button>
-            )}
-
-            {/* Toggle Button */}
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-2"
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              {isExpanded ? "Ocultar" : "Filtros"}
-            </Button>
-          </div>
         </div>
 
         {totalItems > 0 && (

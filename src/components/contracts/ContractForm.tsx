@@ -555,27 +555,6 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => {
-            const testData = {
-              contrato: "Teste de contrato",
-              contratante: "Teste contratante",
-              contratada: "Teste contratada",
-              objeto: "Teste objeto",
-              dataContrato: "2024-01-01",
-              prazo: 30,
-              filial: "Teste filial",
-              categoriaContrato: ContractCategory.Outros,
-            };
-            console.log("🧪 Test data:", testData);
-            createMutation.mutate(testData);
-          }}
-          disabled={isLoading}
-        >
-          Teste
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
           onClick={() => router.push("/dashboard")}
           disabled={isLoading}
         >

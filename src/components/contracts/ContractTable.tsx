@@ -322,23 +322,6 @@ export function ContractTable({
                           <Trash2 className="w-4 h-4" />
                         )}
                       </Button>
-
-                      {/* Botão de teste temporário */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          console.log(
-                            "🧪 Test button clicked for contract:",
-                            contract.id
-                          );
-                          alert(
-                            `Teste: Clique detectado para contrato ${contract.id}`
-                          );
-                        }}
-                        className="inline-flex items-center justify-center p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
-                      >
-                        🧪
-                      </button>
                     </div>
                   </td>
                 </tr>
