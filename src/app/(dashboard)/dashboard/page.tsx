@@ -168,9 +168,9 @@ export default function ModernDashboardPage() {
       dateRange,
     ],
     queryFn: () => contractsApi.getStatistics(),
-    refetchInterval: 15000, // Auto-refresh every 15 seconds para sincronização mais rápida
-    refetchIntervalInBackground: true, // Continua refetchando mesmo com a aba inativa
-    staleTime: 0, // Sempre considera os dados como stale para forçar refetch
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    refetchIntervalInBackground: false, // Não refetcha com aba inativa
+    staleTime: 10000, // Dados ficam fresh por 10 segundos
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
@@ -190,9 +190,9 @@ export default function ModernDashboardPage() {
       dateRange,
     ],
     queryFn: () => contractsApi.getDashboardMetrics(),
-    refetchInterval: 15000, // Auto-refresh every 15 seconds para sincronização mais rápida
-    refetchIntervalInBackground: true, // Continua refetchando mesmo com a aba inativa
-    staleTime: 0, // Sempre considera os dados como stale para forçar refetch
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    refetchIntervalInBackground: false, // Não refetcha com aba inativa
+    staleTime: 10000, // Dados ficam fresh por 10 segundos
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
@@ -761,9 +761,7 @@ export default function ModernDashboardPage() {
                     icon={Target}
                     iconColor="text-green-300"
                     iconBgColor="bg-green-500/20"
-                    progressValue={
-                      dashboardData.performanceMetrics.renewalRate
-                    }
+                    progressValue={dashboardData.performanceMetrics.renewalRate}
                     progressColor="bg-gradient-to-r from-green-400 to-green-500"
                     className="h-full"
                   />
