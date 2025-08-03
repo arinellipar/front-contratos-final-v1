@@ -10,7 +10,6 @@ import { useAuth } from "@/lib/auth/hooks";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useNotifications } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/Button";
-import { HeaderSearch } from "@/components/search/SearchIntegration";
 import {
   Bell,
   Settings,
@@ -110,14 +109,6 @@ export default function UpdatedHeader({
     }
   }, []);
 
-  // Handle search submission
-  const handleSearchSubmit = useCallback(
-    (query: string) => {
-      router.push(`/search?q=${encodeURIComponent(query)}`);
-    },
-    [router]
-  );
-
   // Get notification icon
   const getNotificationIcon = useCallback((notification: any) => {
     const iconMap = {
@@ -200,17 +191,6 @@ export default function UpdatedHeader({
               </div>
             </div>
           </div>
-
-          {/* Center Section - Enhanced Search */}
-          {showSearch && (
-            <div className="flex-1 max-w-2xl min-w-0 mx-4">
-              <HeaderSearch
-                onSearchSubmit={handleSearchSubmit}
-                showQuickActions={true}
-                className="w-full"
-              />
-            </div>
-          )}
 
           {/* Right Section - Actions */}
           <div className="flex items-center gap-2 flex-shrink-0">

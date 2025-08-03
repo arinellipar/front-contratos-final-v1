@@ -121,6 +121,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
         className="fixed top-0 left-0 right-0 z-40"
         fixed={true}
+        showSearch={false}
       />
 
       {/* Sidebar com Z-Index Superior ao Header */}

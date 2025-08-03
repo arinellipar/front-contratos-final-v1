@@ -25,6 +25,7 @@ import {
 } from "recharts";
 import { PageHeader } from "@/components/layout/Pageheader";
 import { Button } from "@/components/ui/Button";
+import { RefreshButton, CreateButton } from "@/components/ui/ButtonPatterns";
 import {
   Card,
   CardContent,
@@ -32,6 +33,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { MetricCard } from "@/components/ui/MetricCard";
+import { MetricCardCSS } from "@/components/ui/MetricCardCSS";
+import { MetricCardOptimized } from "@/components/ui/MetricCardOptimized";
+import { ResponsiveText } from "@/components/ui/ResponsiveText";
 import {
   FileText,
   Plus,
@@ -68,6 +73,7 @@ import {
   formatPercentage,
 } from "@/lib/utils/formatters";
 import { cn } from "@/lib/utils";
+import { getDynamicFontSize } from "@/lib/utils/responsiveText";
 
 // Tipos para o dashboard
 interface DashboardMetrics {
@@ -299,20 +305,6 @@ export default function ModernDashboardPage() {
     </div>
   );
 
-  const getDynamicFontSize = (text: string, baseSize: string = "text-3xl") => {
-    const length = text.length;
-
-    if (length <= 6) {
-      return baseSize; // Original size for short numbers
-    } else if (length <= 10) {
-      return baseSize.replace("3xl", "2xl"); // Medium size for medium numbers
-    } else if (length <= 15) {
-      return baseSize.replace("3xl", "xl"); // Smaller size for long numbers
-    } else {
-      return baseSize.replace("3xl", "lg"); // Smallest size for very long numbers
-    }
-  };
-
   const ErrorDisplay = ({
     error,
     onRetry,
@@ -483,27 +475,16 @@ export default function ModernDashboardPage() {
                 </select>
               </div>
 
-              <Button
-                variant="outline"
+              <RefreshButton
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="flex items-center gap-2"
-              >
-                {isRefreshing ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-                {isRefreshing ? "Atualizando..." : "Atualizar"}
-              </Button>
+                isRefreshing={isRefreshing}
+              />
 
-              <Button
+              <CreateButton
                 onClick={() => router.push("/contracts/create")}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Novo Contrato
-              </Button>
+                text="Novo Contrato"
+              />
             </div>
           </div>
 
@@ -518,10 +499,13 @@ export default function ModernDashboardPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div
-                  className={`${getDynamicFontSize(dashboardData.totalContracts.toLocaleString("pt-BR"))} font-bold text-blue-900 mb-2`}
-                >
-                  {dashboardData.totalContracts.toLocaleString("pt-BR")}
+                <div className="mb-2">
+                  <ResponsiveText
+                    baseFontSize="text-3xl"
+                    className="text-blue-900"
+                  >
+                    {dashboardData.totalContracts.toLocaleString("pt-BR")}
+                  </ResponsiveText>
                 </div>
                 <p className="text-sm text-blue-600/80">
                   Contratos cadastrados
@@ -769,100 +753,64 @@ export default function ModernDashboardPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div className="bg-white/10 backdrop-blur rounded-xl p-5 hover:bg-white/15 transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 bg-green-500/20 rounded-lg">
-                        <Target className="h-5 w-5 text-green-300" />
-                      </div>
-                      <h4 className="font-semibold text-sm">
-                        Taxa de Renovação
-                      </h4>
-                    </div>
-                    <p
-                      className={`${getDynamicFontSize(`${dashboardData.performanceMetrics.renewalRate.toFixed(1)}%`)} font-bold mb-2`}
-                    >
-                      {dashboardData.performanceMetrics.renewalRate.toFixed(1)}%
-                    </p>
-                    <div className="w-full bg-white/20 rounded-full h-2 mb-2">
-                      <div
-                        className="bg-gradient-to-r from-green-400 to-green-500 h-2 rounded-full transition-all duration-1000"
-                        style={{
-                          width: `${dashboardData.performanceMetrics.renewalRate}%`,
-                        }}
-                      ></div>
-                    </div>
-                    <p className="text-xs opacity-90">Contratos renovados</p>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <MetricCardOptimized
+                    title="Taxa de Renovação"
+                    value={`${dashboardData.performanceMetrics.renewalRate.toFixed(1)}%`}
+                    subtitle="Contratos renovados"
+                    icon={Target}
+                    iconColor="text-green-300"
+                    iconBgColor="bg-green-500/20"
+                    progressValue={
+                      dashboardData.performanceMetrics.renewalRate
+                    }
+                    progressColor="bg-gradient-to-r from-green-400 to-green-500"
+                    className="h-full"
+                  />
 
-                  <div className="bg-white/10 backdrop-blur rounded-xl p-5 hover:bg-white/15 transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 bg-yellow-500/20 rounded-lg">
-                        <DollarSign className="h-5 w-5 text-yellow-300" />
-                      </div>
-                      <h4 className="font-semibold text-sm">Valor Médio</h4>
-                    </div>
-                    <p
-                      className={`${getDynamicFontSize(formatCurrency(dashboardData.performanceMetrics.averageContractValue), "text-2xl")} font-bold mb-2`}
-                    >
-                      {formatCurrency(
-                        dashboardData.performanceMetrics.averageContractValue
-                      )}
-                    </p>
-                    <div className="w-full bg-white/20 rounded-full h-2 mb-2">
-                      <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 h-2 rounded-full w-3/4 transition-all duration-1000"></div>
-                    </div>
-                    <p className="text-xs opacity-90">Por contrato</p>
-                  </div>
+                  <MetricCardOptimized
+                    title="Valor Médio"
+                    value={formatCurrency(
+                      dashboardData.performanceMetrics.averageContractValue
+                    )}
+                    subtitle="Por contrato"
+                    icon={DollarSign}
+                    iconColor="text-yellow-300"
+                    iconBgColor="bg-yellow-500/20"
+                    progressValue={75}
+                    progressColor="bg-gradient-to-r from-yellow-400 to-yellow-500"
+                    baseFontSize="text-2xl"
+                    className="h-full"
+                  />
 
-                  <div className="bg-white/10 backdrop-blur rounded-xl p-5 hover:bg-white/15 transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 bg-blue-500/20 rounded-lg">
-                        <Shield className="h-5 w-5 text-blue-300" />
-                      </div>
-                      <h4 className="font-semibold text-sm">Compliance</h4>
-                    </div>
-                    <p
-                      className={`${getDynamicFontSize(`${dashboardData.performanceMetrics.complianceScore.toFixed(1)}%`)} font-bold mb-2`}
-                    >
-                      {dashboardData.performanceMetrics.complianceScore.toFixed(
-                        1
-                      )}
-                      %
-                    </p>
-                    <div className="w-full bg-white/20 rounded-full h-2 mb-2">
-                      <div
-                        className="bg-gradient-to-r from-blue-400 to-blue-500 h-2 rounded-full transition-all duration-1000"
-                        style={{
-                          width: `${dashboardData.performanceMetrics.complianceScore}%`,
-                        }}
-                      ></div>
-                    </div>
-                    <p className="text-xs opacity-90">Score de conformidade</p>
-                  </div>
+                  <MetricCardOptimized
+                    title="Compliance"
+                    value={`${dashboardData.performanceMetrics.complianceScore.toFixed(1)}%`}
+                    subtitle="Score de conformidade"
+                    icon={Shield}
+                    iconColor="text-blue-300"
+                    iconBgColor="bg-blue-500/20"
+                    progressValue={
+                      dashboardData.performanceMetrics.complianceScore
+                    }
+                    progressColor="bg-gradient-to-r from-blue-400 to-blue-500"
+                    className="h-full"
+                  />
 
-                  <div className="bg-white/10 backdrop-blur rounded-xl p-5 hover:bg-white/15 transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 bg-red-500/20 rounded-lg">
-                        <AlertTriangle className="h-5 w-5 text-red-300" />
-                      </div>
-                      <h4 className="font-semibold text-sm">Risco</h4>
-                    </div>
-                    <p
-                      className={`${getDynamicFontSize(`${dashboardData.performanceMetrics.riskScore.toFixed(1)}%`)} font-bold mb-2`}
-                    >
-                      {dashboardData.performanceMetrics.riskScore.toFixed(1)}%
-                    </p>
-                    <div className="w-full bg-white/20 rounded-full h-2 mb-2">
-                      <div
-                        className="bg-gradient-to-r from-red-400 to-red-500 h-2 rounded-full transition-all duration-1000"
-                        style={{
-                          width: `${Math.min(dashboardData.performanceMetrics.riskScore, 100)}%`,
-                        }}
-                      ></div>
-                    </div>
-                    <p className="text-xs opacity-90">Score de risco</p>
-                  </div>
+                  <MetricCardOptimized
+                    title="Risco"
+                    value={`${dashboardData.performanceMetrics.riskScore.toFixed(1)}%`}
+                    subtitle="Score de risco"
+                    icon={AlertTriangle}
+                    iconColor="text-red-300"
+                    iconBgColor="bg-red-500/20"
+                    progressValue={Math.min(
+                      dashboardData.performanceMetrics.riskScore,
+                      100
+                    )}
+                    progressColor="bg-gradient-to-r from-red-400 to-red-500"
+                    className="h-full"
+                  />
                 </div>
               </CardContent>
             </Card>

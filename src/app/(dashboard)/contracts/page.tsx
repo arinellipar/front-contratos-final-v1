@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/layout/Pageheader";
 import { ContractTable } from "@/components/contracts/ContractTable";
 import { ContractFilters as ContractFiltersComponent } from "@/components/contracts/ContractFilters";
 import { Button } from "@/components/ui/Button";
+import { RefreshButton, CreateButton, ExportButton } from "@/components/ui/ButtonPatterns";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
   Card,
@@ -314,38 +315,25 @@ export default function ContractsPage() {
         ]}
         actions={
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
+            <RefreshButton
               onClick={handleRefresh}
               disabled={isRefetching}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${isRefetching ? "animate-spin" : ""}`}
-              />
-              {isRefetching ? "Atualizando..." : "Atualizar"}
-            </Button>
+              isRefreshing={isRefetching}
+            />
 
             {hasPermission("contracts:export") && (
-              <Button
-                variant="outline"
+              <ExportButton
                 onClick={handleExport}
                 disabled={isExporting}
-                className="flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                {isExporting ? "Exportando..." : "Exportar"}
-              </Button>
+                isExporting={isExporting}
+              />
             )}
 
             {hasPermission("contracts:create") && (
-              <Button
+              <CreateButton
                 onClick={() => router.push("/contracts/create")}
-                className="flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Novo Contrato
-              </Button>
+                text="Novo Contrato"
+              />
             )}
           </div>
         }
