@@ -99,6 +99,12 @@ export function useAuth() {
     const user = getCurrentUser() as any;
     console.log("🔐 Current user:", user);
 
+    // Permissões especiais para produção - permitir exportação para usuários autenticados
+    if (permission === "contracts:export" && user) {
+      console.log("🔐 Special permission for contracts:export in production");
+      return true;
+    }
+
     // Se o usuário tem permissões explícitas, use-as
     if (user?.permissions && Array.isArray(user.permissions)) {
       console.log("🔐 User has explicit permissions:", user.permissions);
@@ -138,8 +144,14 @@ export function useAuth() {
       "contracts:create",
       "contracts:update",
       "contracts:delete",
+      "contracts:export", // Adicionado permissão de exportação para usuários
     ],
-    Viewer: ["contracts:read", "reports:view", "contracts:delete"],
+    Viewer: [
+      "contracts:read",
+      "reports:view",
+      "contracts:delete",
+      "contracts:export", // Adicionado permissão de exportação para visualizadores
+    ],
   };
 
   // Função para obter permissões baseadas nas roles do usuário

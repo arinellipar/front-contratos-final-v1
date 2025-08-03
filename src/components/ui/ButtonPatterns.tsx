@@ -74,7 +74,7 @@ export const ExportButton: React.FC<{
     className={cn(baseButtonClasses, className)}
   >
     <Download className="h-4 w-4" />
-    {isExporting ? "Exportando..." : "Exportar"}
+    {isExporting ? "Exportando..." : "Exportar Excel"}
   </Button>
 );
 
