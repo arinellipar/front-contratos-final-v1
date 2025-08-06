@@ -86,8 +86,7 @@ class ApiClient {
   constructor() {
     // URL do backend - Local para desenvolvimento
     const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL ||
-      "https://localhost:5001/api/v1";
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5058/api/v1";
 
     console.log("🔌 API Client initialized with URL:", apiUrl);
 
@@ -289,8 +288,12 @@ class ApiClient {
         // Invalida queries específicas que podem estar relacionadas
         if (resource === "contracts") {
           this.queryClient.invalidateQueries({ queryKey: ["contracts-count"] });
-          this.queryClient.invalidateQueries({ queryKey: ["contracts-statistics"] });
-          this.queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+          this.queryClient.invalidateQueries({
+            queryKey: ["contracts-statistics"],
+          });
+          this.queryClient.invalidateQueries({
+            queryKey: ["dashboard-metrics"],
+          });
           this.queryClient.invalidateQueries({ queryKey: ["dashboard"] });
         }
       }
@@ -546,7 +549,7 @@ class ApiClient {
     config?: AxiosRequestConfig
   ): Promise<T> {
     const response = await this.client.put<T>(url, data, config);
-    
+
     // Sincronização forçada mais agressiva
     if (this.queryClient) {
       const resource = url.split("/")[1];
@@ -555,12 +558,14 @@ class ApiClient {
       // Invalida queries específicas que podem estar relacionadas
       if (resource === "contracts") {
         this.queryClient.invalidateQueries({ queryKey: ["contracts-count"] });
-        this.queryClient.invalidateQueries({ queryKey: ["contracts-statistics"] });
+        this.queryClient.invalidateQueries({
+          queryKey: ["contracts-statistics"],
+        });
         this.queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
         this.queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       }
     }
-    
+
     return response.data;
   }
 
@@ -570,7 +575,7 @@ class ApiClient {
     config?: AxiosRequestConfig
   ): Promise<T> {
     const response = await this.client.patch<T>(url, data, config);
-    
+
     // Sincronização forçada mais agressiva
     if (this.queryClient) {
       const resource = url.split("/")[1];
@@ -579,18 +584,20 @@ class ApiClient {
       // Invalida queries específicas que podem estar relacionadas
       if (resource === "contracts") {
         this.queryClient.invalidateQueries({ queryKey: ["contracts-count"] });
-        this.queryClient.invalidateQueries({ queryKey: ["contracts-statistics"] });
+        this.queryClient.invalidateQueries({
+          queryKey: ["contracts-statistics"],
+        });
         this.queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
         this.queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       }
     }
-    
+
     return response.data;
   }
 
   public async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.client.delete<T>(url, config);
-    
+
     // Sincronização forçada mais agressiva
     if (this.queryClient) {
       const resource = url.split("/")[1];
@@ -599,12 +606,14 @@ class ApiClient {
       // Invalida queries específicas que podem estar relacionadas
       if (resource === "contracts") {
         this.queryClient.invalidateQueries({ queryKey: ["contracts-count"] });
-        this.queryClient.invalidateQueries({ queryKey: ["contracts-statistics"] });
+        this.queryClient.invalidateQueries({
+          queryKey: ["contracts-statistics"],
+        });
         this.queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
         this.queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       }
     }
-    
+
     return response.data;
   }
 

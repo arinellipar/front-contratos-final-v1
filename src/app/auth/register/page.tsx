@@ -29,14 +29,13 @@ import {
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
-// Advanced registration validation with security best practices
+// Simplified registration validation
 const registerSchema = z
   .object({
     nomeCompleto: z
       .string()
       .min(2, "Nome deve ter pelo menos 2 caracteres")
       .max(100, "Nome muito longo")
-      .regex(/^[a-zA-ZÀ-ÿ\s]+$/, "Nome deve conter apenas letras e espaços")
       .transform((val) => val.trim().replace(/\s+/g, " ")),
     email: z
       .string()
@@ -47,11 +46,7 @@ const registerSchema = z
     password: z
       .string()
       .min(8, "Senha deve ter pelo menos 8 caracteres")
-      .max(128, "Senha muito longa")
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]/,
-        "Use ao menos letra minúscula, maiúscula e números"
-      ),
+      .max(128, "Senha muito longa"),
     confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
     acceptTerms: z
       .boolean()
@@ -84,24 +79,6 @@ export default function RegisterPage() {
 
   const watchPassword = watch("password", "");
 
-  // Password validation function
-  const validatePassword = (password: string) => {
-    const hasLowercase = /[a-z]/.test(password);
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasNumber = /\d/.test(password);
-
-    if (!hasLowercase || !hasUppercase || !hasNumber) {
-      setError("password", {
-        type: "manual",
-        message: "Use ao menos letra minúscula, maiúscula e números",
-      });
-      return false;
-    } else {
-      clearErrors("password");
-      return true;
-    }
-  };
-
   // Password strength indicator
   const getPasswordStrength = (password: string) => {
     let strength = 0;
@@ -123,7 +100,18 @@ export default function RegisterPage() {
   // Watch password for real-time validation
   useEffect(() => {
     if (watchPassword && watchPassword.length > 0) {
-      validatePassword(watchPassword);
+      const hasLowercase = /[a-z]/.test(watchPassword);
+      const hasUppercase = /[A-Z]/.test(watchPassword);
+      const hasNumber = /\d/.test(watchPassword);
+
+      if (!hasLowercase || !hasUppercase || !hasNumber) {
+        setError("password", {
+          type: "manual",
+          message: "Use ao menos letra minúscula, maiúscula e números",
+        });
+      } else {
+        clearErrors("password");
+      }
     } else if (watchPassword.length === 0) {
       clearErrors("password");
     }
@@ -131,11 +119,6 @@ export default function RegisterPage() {
 
   const onSubmit = useCallback(
     async (data: RegisterFormData) => {
-      // Validate password before submission
-      if (!validatePassword(data.password)) {
-        return;
-      }
-
       setIsLoading(true);
 
       try {

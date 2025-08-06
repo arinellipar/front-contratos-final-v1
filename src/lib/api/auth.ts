@@ -79,19 +79,25 @@ export const authApi = {
 
       // Remove campos não esperados pelo backend e ajusta nomes
       const { confirmPassword, acceptTerms, ...registerPayload } = data;
-      (registerPayload as any).ConfirmPassword = cleanConfirmPassword; // Converte para maiúsculo para o backend
-      registerPayload.password = cleanPassword;
+
+      // Ajusta o payload para o formato esperado pelo backend
+      const payload = {
+        email: registerPayload.email,
+        password: cleanPassword,
+        confirmPassword: cleanConfirmPassword,
+        nomeCompleto: registerPayload.nomeCompleto,
+      };
 
       // Log para debugging (remover em produção)
       console.debug("Register payload:", {
-        ...registerPayload,
+        ...payload,
         password: "[REDACTED]",
       });
 
       // Requisição para o endpoint de registro
       const response = await apiClient.post<AuthResponse>(
         "/auth/register",
-        registerPayload as any // Força o tipo para permitir ConfirmPassword
+        payload
       );
 
       // Validação da resposta
