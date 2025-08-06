@@ -48,9 +48,7 @@ const registerSchema = z
       .min(8, "Senha deve ter pelo menos 8 caracteres")
       .max(128, "Senha muito longa"),
     confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
-    acceptTerms: z
-      .boolean()
-      .refine((val) => val, "Você deve aceitar os termos de uso"),
+    acceptTerms: z.boolean(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Senhas não coincidem",
@@ -64,6 +62,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showTermsAlert, setShowTermsAlert] = useState(false);
 
   const {
     register,
@@ -78,6 +77,14 @@ export default function RegisterPage() {
   });
 
   const watchPassword = watch("password", "");
+  const watchAcceptTerms = watch("acceptTerms", false);
+
+  // Limpar alerta quando aceitar os termos
+  useEffect(() => {
+    if (watchAcceptTerms && showTermsAlert) {
+      setShowTermsAlert(false);
+    }
+  }, [watchAcceptTerms, showTermsAlert]);
 
   // Password strength indicator
   const getPasswordStrength = (password: string) => {
@@ -119,6 +126,13 @@ export default function RegisterPage() {
 
   const onSubmit = useCallback(
     async (data: RegisterFormData) => {
+      // Verificar se os termos foram aceitos
+      if (!data.acceptTerms) {
+        setShowTermsAlert(true);
+        toast.error("Você deve aceitar os termos de uso para prosseguir");
+        return;
+      }
+
       setIsLoading(true);
 
       try {
@@ -331,12 +345,18 @@ export default function RegisterPage() {
                   {...register("acceptTerms")}
                   id="acceptTerms"
                   type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className={cn(
+                    "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded",
+                    showTermsAlert && "border-red-400 focus:ring-red-500"
+                  )}
                   disabled={isLoading}
                 />
                 <Label
                   htmlFor="acceptTerms"
-                  className="text-sm text-gray-700 cursor-pointer"
+                  className={cn(
+                    "text-sm cursor-pointer",
+                    showTermsAlert ? "text-red-700" : "text-gray-700"
+                  )}
                 >
                   Aceito os{" "}
                   <button
@@ -361,10 +381,23 @@ export default function RegisterPage() {
                 </p>
               )}
 
+              {/* Alerta visual quando tentar submeter sem aceitar termos */}
+              {showTermsAlert && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-700 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    Você deve aceitar os termos de uso para prosseguir
+                  </p>
+                </div>
+              )}
+
               <Button
                 type="submit"
                 disabled={isLoading || isSubmitting}
-                className="w-full"
+                className={cn(
+                  "w-full",
+                  showTermsAlert && "border-red-300 bg-red-50 hover:bg-red-100"
+                )}
                 size="lg"
               >
                 {isLoading ? (

@@ -168,12 +168,6 @@ export const validatePasswordStrength = (
     feedback.push("Adicione números");
   }
 
-  if (/[^a-zA-Z0-9]/.test(password)) {
-    score += 1;
-  } else {
-    feedback.push("Adicione caracteres especiais");
-  }
-
   return {
     isValid: score >= 4,
     score,
