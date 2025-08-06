@@ -100,14 +100,26 @@ export default function UpdatedHeader({
   // Logout handler
   const handleSignOut = useCallback(async () => {
     try {
+      console.log("🔐 Header logout initiated");
+
+      // Limpar tokens do localStorage/sessionStorage
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        sessionStorage.removeItem("accessToken");
+        sessionStorage.removeItem("refreshToken");
+      }
+
       await signOut({
         redirect: true,
         callbackUrl: "/login",
       });
     } catch (error) {
       console.error("Logout error:", error);
+      // Em caso de erro, forçar redirecionamento
+      router.push("/login");
     }
-  }, []);
+  }, [router]);
 
   // Get notification icon
   const getNotificationIcon = useCallback((notification: any) => {

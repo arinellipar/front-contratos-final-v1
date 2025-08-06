@@ -124,7 +124,18 @@ export const authApi = {
           throw new Error("A senha não atende aos requisitos mínimos");
         }
 
+        if (apiError?.message?.includes("User registration failed")) {
+          throw new Error("Falha no registro. Verifique os dados e tente novamente.");
+        }
+
+        if (apiError?.errors) {
+          // Se há erros específicos de validação
+          const errorMessages = Object.values(apiError.errors).flat();
+          throw new Error(errorMessages.join(", "));
+        }
+
         console.error("Register error:", apiError?.message || "Unknown error");
+        console.error("Full API error:", apiError);
 
         // Re-throw com mensagem mais amigável
         throw new Error(apiError?.message || "Erro ao criar conta");

@@ -170,6 +170,38 @@ export function useAuth() {
     return Array.from(permissions);
   };
 
+  // Função de logout personalizada
+  const signOutCustom = async () => {
+    try {
+      console.log("🔐 Signing out...");
+
+      // Limpar tokens do localStorage/sessionStorage
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        sessionStorage.removeItem("accessToken");
+        sessionStorage.removeItem("refreshToken");
+      }
+
+      // Se estiver em modo bypass, apenas redirecionar
+      if (bypassAuth) {
+        console.log("🔐 Bypass auth - redirecting to login");
+        router.push("/login");
+        return;
+      }
+
+      // Usar o signOut do NextAuth
+      await signOut({
+        redirect: true,
+        callbackUrl: "/login",
+      });
+    } catch (error) {
+      console.error("🔐 Logout error:", error);
+      // Em caso de erro, forçar redirecionamento
+      router.push("/login");
+    }
+  };
+
   return {
     session,
     status,
@@ -178,7 +210,7 @@ export function useAuth() {
     loginFake,
     canAccessWithoutAuth,
     signIn,
-    signOut,
+    signOut: signOutCustom,
     isDevelopment,
     bypassAuth,
     hasRole,

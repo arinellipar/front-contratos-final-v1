@@ -35,18 +35,13 @@ const registerSchema = z
     nomeCompleto: z
       .string()
       .min(2, "Nome deve ter pelo menos 2 caracteres")
-      .max(100, "Nome muito longo")
-      .transform((val) => val.trim().replace(/\s+/g, " ")),
+      .max(100, "Nome muito longo"),
     email: z
       .string()
       .min(1, "Email é obrigatório")
       .email("Email deve ter formato válido")
-      .max(320, "Email muito longo")
-      .transform((val) => val.toLowerCase().trim()),
-    password: z
-      .string()
-      .min(8, "Senha deve ter pelo menos 8 caracteres")
-      .max(128, "Senha muito longa"),
+      .max(320, "Email muito longo"),
+    password: z.string().min(1, "Senha é obrigatória"),
     confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
     acceptTerms: z.boolean(),
   })
@@ -63,6 +58,9 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showTermsAlert, setShowTermsAlert] = useState(false);
+  const [showPasswordLengthAlert, setShowPasswordLengthAlert] = useState(false);
+  const [showPasswordMismatchAlert, setShowPasswordMismatchAlert] =
+    useState(false);
 
   const {
     register,
@@ -73,10 +71,11 @@ export default function RegisterPage() {
     clearErrors,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
-    mode: "onChange", // Real-time validation for better UX
+    mode: "onSubmit", // Change to onSubmit to avoid premature validation
   });
 
   const watchPassword = watch("password", "");
+  const watchConfirmPassword = watch("confirmPassword", "");
   const watchAcceptTerms = watch("acceptTerms", false);
 
   // Limpar alerta quando aceitar os termos
@@ -107,27 +106,87 @@ export default function RegisterPage() {
   // Watch password for real-time validation
   useEffect(() => {
     if (watchPassword && watchPassword.length > 0) {
-      const hasLowercase = /[a-z]/.test(watchPassword);
+      // Verificar comprimento mínimo e letra maiúscula
+      const hasMinLength = watchPassword.length >= 8;
       const hasUppercase = /[A-Z]/.test(watchPassword);
-      const hasNumber = /\d/.test(watchPassword);
 
-      if (!hasLowercase || !hasUppercase || !hasNumber) {
-        setError("password", {
-          type: "manual",
-          message: "Use ao menos letra minúscula, maiúscula e números",
-        });
+      if (!hasMinLength || !hasUppercase) {
+        setShowPasswordLengthAlert(true);
       } else {
-        clearErrors("password");
+        setShowPasswordLengthAlert(false);
       }
     } else if (watchPassword.length === 0) {
-      clearErrors("password");
+      setShowPasswordLengthAlert(false);
     }
   }, [watchPassword]);
 
+  // Watch password confirmation for real-time validation
+  useEffect(() => {
+    if (watchPassword && watchConfirmPassword) {
+      if (watchPassword !== watchConfirmPassword) {
+        setShowPasswordMismatchAlert(true);
+      } else {
+        setShowPasswordMismatchAlert(false);
+      }
+    } else if (!watchConfirmPassword) {
+      setShowPasswordMismatchAlert(false);
+    }
+  }, [watchPassword, watchConfirmPassword]);
+
   const onSubmit = useCallback(
     async (data: RegisterFormData) => {
+      // Debug: Log dos dados recebidos
+      console.log("Form data:", {
+        ...data,
+        password: "[REDACTED]",
+        confirmPassword: "[REDACTED]",
+      });
+
+      // Validação manual dos campos obrigatórios
+      if (
+        !data.email ||
+        !data.password ||
+        !data.confirmPassword ||
+        !data.nomeCompleto
+      ) {
+        toast.error("Todos os campos são obrigatórios");
+        return;
+      }
+
+      // Verificar comprimento da senha e letra maiúscula
+      if (data.password.length < 8) {
+        toast.error("Senha deve ter pelo menos 8 caracteres");
+        return;
+      }
+
+      if (!/[A-Z]/.test(data.password)) {
+        toast.error("Senha deve conter pelo menos uma letra maiúscula");
+        return;
+      }
+
+      // Verificar se as senhas coincidem
+      if (data.password !== data.confirmPassword) {
+        toast.error("Senhas não coincidem");
+        return;
+      }
+
+      // Limpar e formatar os dados
+      const cleanData = {
+        ...data,
+        email: data.email.toLowerCase().trim(),
+        nomeCompleto: data.nomeCompleto.trim().replace(/\s+/g, " "),
+        password: data.password.trim(),
+        confirmPassword: data.confirmPassword.trim(),
+      };
+
+      console.log("Clean data:", {
+        ...cleanData,
+        password: "[REDACTED]",
+        confirmPassword: "[REDACTED]",
+      });
+
       // Verificar se os termos foram aceitos
-      if (!data.acceptTerms) {
+      if (!cleanData.acceptTerms) {
         setShowTermsAlert(true);
         toast.error("Você deve aceitar os termos de uso para prosseguir");
         return;
@@ -137,11 +196,11 @@ export default function RegisterPage() {
 
       try {
         await authApi.register({
-          email: data.email,
-          password: data.password,
-          confirmPassword: data.confirmPassword, // Mantém minúsculo para consistência
-          nomeCompleto: data.nomeCompleto,
-          acceptTerms: data.acceptTerms,
+          email: cleanData.email,
+          password: cleanData.password,
+          confirmPassword: cleanData.confirmPassword,
+          nomeCompleto: cleanData.nomeCompleto,
+          acceptTerms: cleanData.acceptTerms,
         });
 
         toast.success(
@@ -251,7 +310,9 @@ export default function RegisterPage() {
                     placeholder="Digite sua senha"
                     className={cn(
                       "pl-10 pr-10",
-                      errors.password && "border-red-300"
+                      errors.password && "border-red-300",
+                      showPasswordLengthAlert &&
+                        "border-yellow-400 focus:border-yellow-500"
                     )}
                     disabled={isLoading}
                   />
@@ -268,6 +329,36 @@ export default function RegisterPage() {
                     )}
                   </button>
                 </div>
+
+                {/* Contador de caracteres */}
+                {watchPassword && (
+                  <div className="flex justify-between items-center text-xs">
+                    <span
+                      className={cn(
+                        "text-gray-500",
+                        (watchPassword.length < 8 ||
+                          !/[A-Z]/.test(watchPassword)) &&
+                          "text-yellow-600",
+                        watchPassword.length >= 8 &&
+                          /[A-Z]/.test(watchPassword) &&
+                          "text-green-600"
+                      )}
+                    >
+                      {watchPassword.length}/8 caracteres
+                    </span>
+                    {watchPassword.length < 8 && (
+                      <span className="text-yellow-600">
+                        Adicione mais {8 - watchPassword.length} caractere(s)
+                      </span>
+                    )}
+                    {watchPassword.length >= 8 &&
+                      !/[A-Z]/.test(watchPassword) && (
+                        <span className="text-yellow-600">
+                          Adicione uma letra maiúscula
+                        </span>
+                      )}
+                  </div>
+                )}
 
                 {/* Password Strength Indicator */}
                 {watchPassword && (
@@ -294,7 +385,18 @@ export default function RegisterPage() {
                   </div>
                 )}
 
-                {errors.password && (
+                {/* Alerta específico para comprimento da senha */}
+                {showPasswordLengthAlert && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <p className="text-sm text-yellow-700 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      Senha deve ter pelo menos 8 caracteres e uma letra
+                      maiúscula
+                    </p>
+                  </div>
+                )}
+
+                {errors.password && !showPasswordLengthAlert && (
                   <p className="text-sm text-red-600 flex items-center gap-1">
                     <AlertCircle className="w-4 h-4" />
                     {errors.password.message}
@@ -314,7 +416,9 @@ export default function RegisterPage() {
                     placeholder="Confirme sua senha"
                     className={cn(
                       "pl-10 pr-10",
-                      errors.confirmPassword && "border-red-300"
+                      errors.confirmPassword && "border-red-300",
+                      showPasswordMismatchAlert &&
+                        "border-red-400 focus:border-red-500"
                     )}
                     disabled={isLoading}
                   />
@@ -331,7 +435,17 @@ export default function RegisterPage() {
                     )}
                   </button>
                 </div>
-                {errors.confirmPassword && (
+                {/* Alerta para senhas que não coincidem */}
+                {showPasswordMismatchAlert && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-700 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      Senhas não coincidem
+                    </p>
+                  </div>
+                )}
+
+                {errors.confirmPassword && !showPasswordMismatchAlert && (
                   <p className="text-sm text-red-600 flex items-center gap-1">
                     <AlertCircle className="w-4 h-4" />
                     {errors.confirmPassword.message}
@@ -393,7 +507,7 @@ export default function RegisterPage() {
 
               <Button
                 type="submit"
-                disabled={isLoading || isSubmitting}
+                disabled={isLoading}
                 className={cn(
                   "w-full",
                   showTermsAlert && "border-red-300 bg-red-50 hover:bg-red-100"

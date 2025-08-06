@@ -289,11 +289,25 @@ export default function Sidebar({
    */
   const handleLogout = useCallback(async () => {
     try {
+      console.log("🔐 Sidebar logout initiated");
+
+      // Limpar tokens do localStorage/sessionStorage
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        sessionStorage.removeItem("accessToken");
+        sessionStorage.removeItem("refreshToken");
+      }
+
       await signOut();
+
+      console.log("🔐 Sidebar logout completed");
     } catch (error) {
       console.error("Logout error:", error);
+      // Em caso de erro, forçar redirecionamento
+      router.push("/login");
     }
-  }, [signOut]);
+  }, [signOut, router]);
 
   /**
    * Suporte a navegação por teclado
@@ -342,7 +356,8 @@ export default function Sidebar({
     let badgeValue = item.badge;
     if (item.id === "contracts") {
       // Filtrar apenas contratos ativos (status 1)
-      const activeContracts = contractsData?.data?.filter(contract => contract.status === 1) || [];
+      const activeContracts =
+        contractsData?.data?.filter((contract) => contract.status === 1) || [];
       badgeValue = activeContracts.length;
     } else if (item.id === "notifications") {
       badgeValue = notificationsCount || 0;
