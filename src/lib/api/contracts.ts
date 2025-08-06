@@ -36,7 +36,8 @@ export const contractsApi = {
    * Retrieves paginated list of contracts with advanced filtering
    */
   async getAll(
-    filters?: ContractFilters
+    filters?: ContractFilters,
+    forceRefresh?: boolean
   ): Promise<PaginatedResponse<Contract>> {
     const params = new URLSearchParams();
 
@@ -46,6 +47,10 @@ export const contractsApi = {
           params.append(key, value.toString());
         }
       });
+    }
+
+    if (forceRefresh) {
+      params.append("forceRefresh", "true");
     }
 
     return apiClient.get<PaginatedResponse<Contract>>(

@@ -22,6 +22,33 @@ import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import { saveAs } from "file-saver";
 
+// CSS para line-clamp e scrollbar
+const lineClampStyles = `
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+    .scrollbar-thin::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 2px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+`;
+
 interface ContractTableProps {
   contracts: Contract[];
   isLoading: boolean;
@@ -140,36 +167,43 @@ export function ContractTable({
 
   return (
     <div className="w-full">
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table
-          className="min-w-full divide-y divide-gray-200"
-          style={{ position: "relative", zIndex: 1 }}
-        >
+      <style dangerouslySetInnerHTML={{ __html: lineClampStyles }} />
+      {/* Desktop Table - Visible on md and larger screens */}
+      <div className="hidden md:block overflow-x-auto relative scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+        <table className="min-w-max divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                 Data
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                Contrato
+              </th>
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                 Contratante
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                 Contratada
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Objeto
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                Prazo
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                Vencimento
+              </th>
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                 Categoria
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                 Filial
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                Valor
+              </th>
+              <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
                 PDF
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                 Ações
               </th>
             </tr>
@@ -177,7 +211,7 @@ export function ContractTable({
           <tbody className="bg-white divide-y divide-gray-200">
             {contracts.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-12 text-center">
+                <td colSpan={11} className="px-6 py-12 text-center">
                   <div className="flex flex-col items-center">
                     <FileText className="w-12 h-12 text-gray-400 mb-4" />
                     <p className="text-gray-500">Nenhum contrato encontrado</p>
@@ -185,7 +219,7 @@ export function ContractTable({
                       variant="outline"
                       size="sm"
                       className="mt-4"
-                      onClick={() => router.push("/dashboard/create")}
+                      onClick={() => router.push("/contracts/create")}
                     >
                       Criar primeiro contrato
                     </Button>
@@ -197,35 +231,45 @@ export function ContractTable({
                 <tr
                   key={contract.id}
                   className="hover:bg-gray-50 transition-colors"
-                  onClick={() => {
-                    console.log(
-                      "🔴 Table row clicked for contract:",
-                      contract.id
-                    );
-                  }}
                 >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatDate(contract.dataContrato)}
+                  <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
+                    {contract.dataContrato &&
+                    !isNaN(new Date(contract.dataContrato).getTime())
+                      ? new Date(contract.dataContrato).toLocaleDateString(
+                          "pt-BR"
+                        )
+                      : "—"}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-2 py-2">
+                    <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
+                      {contract.contrato}
+                    </div>
+                  </td>
+                  <td className="px-2 py-2">
                     <div className="text-sm text-gray-900 truncate max-w-xs">
                       {contract.contratante}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-2 py-2">
                     <div className="text-sm text-gray-900 truncate max-w-xs">
                       {contract.contratada}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900 truncate max-w-xs">
-                      {contract.objeto}
-                    </div>
+                  <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
+                    {contract.prazo} dias
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
+                    {contract.dataVencimento &&
+                    !isNaN(new Date(contract.dataVencimento).getTime())
+                      ? new Date(contract.dataVencimento).toLocaleDateString(
+                          "pt-BR"
+                        )
+                      : "—"}
+                  </td>
+                  <td className="px-2 py-2 whitespace-nowrap">
                     <span
                       className={cn(
-                        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
+                        "inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium border",
                         getCategoryColor(contract.categoriaContrato)
                       )}
                     >
@@ -235,10 +279,15 @@ export function ContractTable({
                       {contract.categoriaContrato}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
                     {contract.filial}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
+                    {contract.multa
+                      ? `R$ ${contract.multa.toLocaleString("pt-BR")}`
+                      : "—"}
+                  </td>
+                  <td className="px-2 py-2 whitespace-nowrap text-center">
                     {contract.arquivoPdfCaminho ? (
                       <Button
                         size="sm"
@@ -252,25 +301,13 @@ export function ContractTable({
                       <span className="text-gray-400 text-xs">—</span>
                     )}
                   </td>
-                  <td
-                    className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
-                    style={{ position: "relative", zIndex: 5 }}
-                  >
-                    <div
-                      className="flex items-center justify-end gap-2"
-                      onClick={() => {
-                        console.log(
-                          "🔴 Actions cell clicked for contract:",
-                          contract.id
-                        );
-                      }}
-                      style={{ position: "relative", zIndex: 5 }}
-                    >
+                  <td className="px-2 py-2 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex items-center justify-end gap-1">
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() =>
-                          router.push(`/dashboard/${contract.id}/edit`)
+                          router.push(`/contracts/${contract.id}/edit`)
                         }
                         className="text-blue-600 hover:text-blue-700"
                       >
@@ -280,41 +317,12 @@ export function ContractTable({
                         size="sm"
                         variant="ghost"
                         onClick={(e) => {
-                          console.log("🔴 Button clicked directly!");
-                          console.log("🔴 Event target:", e.target);
-                          console.log(
-                            "🔴 Event currentTarget:",
-                            e.currentTarget
-                          );
-                          console.log("🔴 Event type:", e.type);
-                          console.log("🔴 Event bubbles:", e.bubbles);
-                          console.log("🔴 Event cancelable:", e.cancelable);
-                          console.log(
-                            "🔴 Event defaultPrevented:",
-                            e.defaultPrevented
-                          );
-                          console.log("🔴 Event timeStamp:", e.timeStamp);
                           e.preventDefault();
                           e.stopPropagation();
                           handleDelete(contract.id);
                         }}
-                        onMouseDown={(e) => {
-                          console.log("🔴 Button mousedown detected!");
-                        }}
-                        onMouseUp={(e) => {
-                          console.log("🔴 Button mouseup detected!");
-                        }}
-                        onTouchStart={(e) => {
-                          console.log("🔴 Button touchstart detected!");
-                        }}
                         disabled={deletingId === contract.id}
-                        className="text-red-600 hover:text-red-700 relative z-10"
-                        style={{
-                          position: "relative",
-                          zIndex: 10,
-                          pointerEvents: "auto",
-                          cursor: "pointer",
-                        }}
+                        className="text-red-700"
                       >
                         {deletingId === contract.id ? (
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
@@ -329,6 +337,182 @@ export function ContractTable({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile/Tablet Cards - Visible on screens smaller than md */}
+      <div className="md:hidden space-y-4">
+        {contracts.length === 0 ? (
+          <div className="text-center py-12">
+            <FileText className="w-12 h-12 text-gray-400 mb-4 mx-auto" />
+            <p className="text-gray-500">Nenhum contrato encontrado</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-4"
+              onClick={() => router.push("/contracts/create")}
+            >
+              Criar primeiro contrato
+            </Button>
+          </div>
+        ) : (
+          contracts.map((contract) => (
+            <div
+              key={contract.id}
+              className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className={cn(
+                        "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border",
+                        getCategoryColor(contract.categoriaContrato)
+                      )}
+                    >
+                      <span className="mr-1">
+                        {getCategoryIcon(contract.categoriaContrato)}
+                      </span>
+                      {contract.categoriaContrato}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      #{contract.id}
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-900 truncate">
+                    {contract.contrato}
+                  </h3>
+                </div>
+                <div className="flex items-center gap-1 ml-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      router.push(`/contracts/${contract.id}/edit`)
+                    }
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDelete(contract.id);
+                    }}
+                    disabled={deletingId === contract.id}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    {deletingId === contract.id ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Content Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                {/* Left Column */}
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-xs font-medium text-gray-500">
+                      Contratante:
+                    </span>
+                    <p className="text-gray-900 truncate">
+                      {contract.contratante}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-xs font-medium text-gray-500">
+                      Contratada:
+                    </span>
+                    <p className="text-gray-900 truncate">
+                      {contract.contratada}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-xs font-medium text-gray-500">
+                      Data:
+                    </span>
+                    <p className="text-gray-900">
+                      {contract.dataContrato &&
+                      !isNaN(new Date(contract.dataContrato).getTime())
+                        ? new Date(contract.dataContrato).toLocaleDateString(
+                            "pt-BR"
+                          )
+                        : "—"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right Column */}
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-xs font-medium text-gray-500">
+                      Prazo:
+                    </span>
+                    <p className="text-gray-900">{contract.prazo} dias</p>
+                  </div>
+                  <div>
+                    <span className="text-xs font-medium text-gray-500">
+                      Vencimento:
+                    </span>
+                    <p className="text-gray-900">
+                      {contract.dataVencimento &&
+                      !isNaN(new Date(contract.dataVencimento).getTime())
+                        ? new Date(contract.dataVencimento).toLocaleDateString(
+                            "pt-BR"
+                          )
+                        : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-xs font-medium text-gray-500">
+                      Filial:
+                    </span>
+                    <p className="text-gray-900">{contract.filial}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs font-medium text-gray-500">
+                      Valor:
+                    </span>
+                    <p className="text-gray-900">
+                      {contract.multa
+                        ? `R$ ${contract.multa.toLocaleString("pt-BR")}`
+                        : "—"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {contract.arquivoPdfCaminho ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDownloadPdf(contract)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      <span className="text-xs">PDF</span>
+                    </Button>
+                  ) : (
+                    <span className="text-gray-400 text-xs">Sem PDF</span>
+                  )}
+                </div>
+                <div className="text-xs text-gray-500">
+                  Criado em {formatDate(contract.dataCriacao)}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Pagination */}

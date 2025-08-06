@@ -11,7 +11,11 @@ import { PageHeader } from "@/components/layout/Pageheader";
 import { ContractTable } from "@/components/contracts/ContractTable";
 import { ContractFilters as ContractFiltersComponent } from "@/components/contracts/ContractFilters";
 import { Button } from "@/components/ui/Button";
-import { RefreshButton, CreateButton, ExportButton } from "@/components/ui/ButtonPatterns";
+import {
+  RefreshButton,
+  CreateButton,
+  ExportButton,
+} from "@/components/ui/ButtonPatterns";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
   Card,
@@ -79,8 +83,8 @@ export default function ContractsPage() {
     isRefetching,
   } = useQuery({
     queryKey: ["contracts", filters],
-    queryFn: () => contractsApi.getAll(filters),
-    staleTime: 1000, // 1 segundo
+    queryFn: () => contractsApi.getAll(filters, true),
+    staleTime: 0, // Sempre considera stale para forçar refetch
     gcTime: 2 * 60 * 1000, // 2 minutos
     refetchOnWindowFocus: true,
     refetchInterval: 30000, // Refetch a cada 30 segundos
@@ -124,6 +128,21 @@ export default function ContractsPage() {
   const contracts = contractsResponse?.data || [];
   const totalPages = contractsResponse?.totalPages || 1;
   const totalItems = contractsResponse?.totalItems || 0;
+
+  // Log para verificar ordenação
+  useEffect(() => {
+    if (contracts.length > 0) {
+      console.log(
+        "📅 Contratos ordenados por data:",
+        contracts.map((c) => ({
+          id: c.id,
+          contrato: c.contrato,
+          dataContrato: c.dataContrato,
+          dataFormatada: new Date(c.dataContrato).toLocaleDateString("pt-BR"),
+        }))
+      );
+    }
+  }, [contracts]);
 
   // Estatísticas calculadas
   const quickStats = useMemo(() => {

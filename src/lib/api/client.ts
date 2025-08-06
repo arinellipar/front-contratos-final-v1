@@ -84,10 +84,10 @@ class ApiClient {
   private refreshTimer: NodeJS.Timeout | null = null;
 
   constructor() {
-    // URL do backend na Azure
+    // URL do backend - Local para desenvolvimento
     const apiUrl =
       process.env.NEXT_PUBLIC_API_URL ||
-      "https://fradema-backend-api-crguetd0f7gth9e3.brazilsouth-01.azurewebsites.net/api/v1";
+      "https://localhost:5001/api/v1";
 
     console.log("🔌 API Client initialized with URL:", apiUrl);
 
