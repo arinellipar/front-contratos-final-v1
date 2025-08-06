@@ -1010,7 +1010,7 @@ export default function ContractDetailPage() {
                 <Button
                   variant="outline"
                   className="w-full justify-start"
-                  onClick={() => router.push(`/dashboard`)}
+                  onClick={() => router.push(`/contracts`)}
                 >
                   <FileText className="h-4 w-4 mr-2" />
                   Ver Todos os Contratos

@@ -230,7 +230,8 @@ export function ContractTable({
               contracts.map((contract) => (
                 <tr
                   key={contract.id}
-                  className="hover:bg-gray-50 transition-colors"
+                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => router.push(`/contracts/${contract.id}`)}
                 >
                   <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
                     {contract.dataContrato &&
@@ -306,10 +307,13 @@ export function ContractTable({
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() =>
-                          router.push(`/contracts/${contract.id}/edit`)
-                        }
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          router.push(`/contracts/${contract.id}/edit`);
+                        }}
                         className="text-blue-600 hover:text-blue-700"
+                        title="Editar contrato"
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -323,6 +327,7 @@ export function ContractTable({
                         }}
                         disabled={deletingId === contract.id}
                         className="text-red-700"
+                        title="Excluir contrato"
                       >
                         {deletingId === contract.id ? (
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
@@ -358,7 +363,8 @@ export function ContractTable({
           contracts.map((contract) => (
             <div
               key={contract.id}
-              className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => router.push(`/contracts/${contract.id}`)}
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
@@ -387,10 +393,13 @@ export function ContractTable({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() =>
-                      router.push(`/contracts/${contract.id}/edit`)
-                    }
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      router.push(`/contracts/${contract.id}/edit`);
+                    }}
                     className="text-blue-600 hover:text-blue-700"
+                    title="Editar contrato"
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -404,6 +413,7 @@ export function ContractTable({
                     }}
                     disabled={deletingId === contract.id}
                     className="text-red-600 hover:text-red-700"
+                    title="Excluir contrato"
                   >
                     {deletingId === contract.id ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
