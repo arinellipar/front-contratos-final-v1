@@ -607,7 +607,7 @@ export const UserValidationRules = {
     required: true,
     minLength: 8,
     maxLength: 128,
-    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]/,
+    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]*$/,
   },
   phoneNumber: {
     pattern: /^\+?[\d\s\-\(\)]+$/,
