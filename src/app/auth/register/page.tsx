@@ -1,7 +1,7 @@
 // src/app/auth/register/page.tsx
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -49,8 +49,8 @@ const registerSchema = z
       .min(8, "Senha deve ter pelo menos 8 caracteres")
       .max(128, "Senha muito longa")
       .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-        "Senha deve conter pelo menos: 1 letra minúscula, 1 maiúscula, 1 número e 1 símbolo"
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]/,
+        "Use ao menos letra minúscula, maiúscula e números"
       ),
     confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
     acceptTerms: z
@@ -75,12 +75,32 @@ export default function RegisterPage() {
     handleSubmit,
     formState: { errors, isSubmitting },
     watch,
+    setError,
+    clearErrors,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     mode: "onChange", // Real-time validation for better UX
   });
 
   const watchPassword = watch("password", "");
+
+  // Password validation function
+  const validatePassword = (password: string) => {
+    const hasLowercase = /[a-z]/.test(password);
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+
+    if (!hasLowercase || !hasUppercase || !hasNumber) {
+      setError("password", {
+        type: "manual",
+        message: "Use ao menos letra minúscula, maiúscula e números",
+      });
+      return false;
+    } else {
+      clearErrors("password");
+      return true;
+    }
+  };
 
   // Password strength indicator
   const getPasswordStrength = (password: string) => {
@@ -89,10 +109,9 @@ export default function RegisterPage() {
     if (/[a-z]/.test(password)) strength++;
     if (/[A-Z]/.test(password)) strength++;
     if (/\d/.test(password)) strength++;
-    if (/[@$!%*?&]/.test(password)) strength++;
 
-    const labels = ["Muito Fraca", "Fraca", "Regular", "Boa", "Forte", "Muito Forte"];
-    
+    const labels = ["Muito Fraca", "Fraca", "Regular", "Boa"];
+
     return {
       score: strength,
       label: labels[Math.min(strength, labels.length - 1)] || "Muito Fraca",
@@ -101,8 +120,22 @@ export default function RegisterPage() {
 
   const passwordStrength = getPasswordStrength(watchPassword);
 
+  // Watch password for real-time validation
+  useEffect(() => {
+    if (watchPassword && watchPassword.length > 0) {
+      validatePassword(watchPassword);
+    } else if (watchPassword.length === 0) {
+      clearErrors("password");
+    }
+  }, [watchPassword]);
+
   const onSubmit = useCallback(
     async (data: RegisterFormData) => {
+      // Validate password before submission
+      if (!validatePassword(data.password)) {
+        return;
+      }
+
       setIsLoading(true);
 
       try {
@@ -250,11 +283,10 @@ export default function RegisterPage() {
                             passwordStrength.score <= 1 && "bg-red-500",
                             passwordStrength.score === 2 && "bg-yellow-500",
                             passwordStrength.score === 3 && "bg-blue-500",
-                            passwordStrength.score === 4 && "bg-green-500",
-                            passwordStrength.score >= 5 && "bg-emerald-600"
+                            passwordStrength.score >= 4 && "bg-green-500"
                           )}
                           style={{
-                            width: `${(passwordStrength.score / 5) * 100}%`,
+                            width: `${(passwordStrength.score / 4) * 100}%`,
                           }}
                         />
                       </div>
