@@ -84,9 +84,12 @@ class ApiClient {
   private refreshTimer: NodeJS.Timeout | null = null;
 
   constructor() {
-    // URL do backend - Local para desenvolvimento
-    const apiUrl =
+    // URL do backend - via proxy interno para evitar CORS em dev
+    // Em produção, podemos manter chamadas diretas caso a origem seja a mesma
+    const directApiUrl =
       process.env.NEXT_PUBLIC_API_URL || "http://localhost:5058/api/v1";
+    const useProxy = process.env.NODE_ENV !== "production";
+    const apiUrl = useProxy ? "/api/proxy" : directApiUrl;
 
     console.log("🔌 API Client initialized with URL:", apiUrl);
 
@@ -97,7 +100,7 @@ class ApiClient {
         "X-Client-Version": process.env.NEXT_PUBLIC_APP_VERSION || "1.0.0",
         "X-Client-Platform": "web",
       },
-      withCredentials: true,
+      withCredentials: false,
     });
 
     this.setupInterceptors();

@@ -37,6 +37,7 @@ declare module "next-auth" {
 
 // URL do backend Azure
 const BACKEND_API_URL =
+  process.env.BACKEND_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   "https://fradema-backend-api-crguetd0f7gth9e3.brazilsouth-01.azurewebsites.net/api/v1";
 
