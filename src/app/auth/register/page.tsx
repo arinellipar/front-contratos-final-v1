@@ -92,8 +92,9 @@ export default function RegisterPage() {
     if (/[a-z]/.test(password)) strength++;
     if (/[A-Z]/.test(password)) strength++;
     if (/\d/.test(password)) strength++;
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++;
 
-    const labels = ["Muito Fraca", "Fraca", "Regular", "Boa"];
+    const labels = ["Muito Fraca", "Fraca", "Regular", "Boa", "Muito Boa"];
 
     return {
       score: strength,
@@ -106,11 +107,13 @@ export default function RegisterPage() {
   // Watch password for real-time validation
   useEffect(() => {
     if (watchPassword && watchPassword.length > 0) {
-      // Verificar comprimento mínimo e letra maiúscula
+      // Verificar todos os requisitos de senha
       const hasMinLength = watchPassword.length >= 8;
       const hasUppercase = /[A-Z]/.test(watchPassword);
+      const hasNumber = /\d/.test(watchPassword);
+      const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(watchPassword);
 
-      if (!hasMinLength || !hasUppercase) {
+      if (!hasMinLength || !hasUppercase || !hasNumber || !hasSymbol) {
         setShowPasswordLengthAlert(true);
       } else {
         setShowPasswordLengthAlert(false);
@@ -153,7 +156,7 @@ export default function RegisterPage() {
         return;
       }
 
-      // Verificar comprimento da senha e letra maiúscula
+      // Verificar todos os requisitos de senha
       if (data.password.length < 8) {
         toast.error("Senha deve ter pelo menos 8 caracteres");
         return;
@@ -161,6 +164,18 @@ export default function RegisterPage() {
 
       if (!/[A-Z]/.test(data.password)) {
         toast.error("Senha deve conter pelo menos uma letra maiúscula");
+        return;
+      }
+
+      if (!/\d/.test(data.password)) {
+        toast.error("Senha deve conter pelo menos um número");
+        return;
+      }
+
+      if (!/[!@#$%^&*(),.?":{}|<>]/.test(data.password)) {
+        toast.error(
+          'Senha deve conter pelo menos um símbolo (!@#$%^&*(),.?":{}|<>)'
+        );
         return;
       }
 
@@ -301,6 +316,10 @@ export default function RegisterPage() {
               {/* Password with Strength Indicator */}
               <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
+                <div className="text-xs text-gray-600 mb-2">
+                  Sua senha deve conter: 8+ caracteres, letra maiúscula, número
+                  e símbolo
+                </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
@@ -330,33 +349,98 @@ export default function RegisterPage() {
                   </button>
                 </div>
 
-                {/* Contador de caracteres */}
+                {/* Requisitos de senha */}
                 {watchPassword && (
-                  <div className="flex justify-between items-center text-xs">
-                    <span
-                      className={cn(
-                        "text-gray-500",
-                        (watchPassword.length < 8 ||
-                          !/[A-Z]/.test(watchPassword)) &&
-                          "text-yellow-600",
-                        watchPassword.length >= 8 &&
-                          /[A-Z]/.test(watchPassword) &&
-                          "text-green-600"
-                      )}
-                    >
-                      {watchPassword.length}/8 caracteres
-                    </span>
-                    {watchPassword.length < 8 && (
-                      <span className="text-yellow-600">
-                        Adicione mais {8 - watchPassword.length} caractere(s)
-                      </span>
-                    )}
-                    {watchPassword.length >= 8 &&
-                      !/[A-Z]/.test(watchPassword) && (
-                        <span className="text-yellow-600">
-                          Adicione uma letra maiúscula
+                  <div className="space-y-2">
+                    <div className="text-xs space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "w-3 h-3 rounded-full flex items-center justify-center",
+                            watchPassword.length >= 8
+                              ? "bg-green-500 text-white"
+                              : "bg-gray-300"
+                          )}
+                        >
+                          {watchPassword.length >= 8 ? "✓" : ""}
                         </span>
-                      )}
+                        <span
+                          className={cn(
+                            watchPassword.length >= 8
+                              ? "text-green-600"
+                              : "text-gray-500"
+                          )}
+                        >
+                          Pelo menos 8 caracteres ({watchPassword.length}/8)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "w-3 h-3 rounded-full flex items-center justify-center",
+                            /[A-Z]/.test(watchPassword)
+                              ? "bg-green-500 text-white"
+                              : "bg-gray-300"
+                          )}
+                        >
+                          {/[A-Z]/.test(watchPassword) ? "✓" : ""}
+                        </span>
+                        <span
+                          className={cn(
+                            /[A-Z]/.test(watchPassword)
+                              ? "text-green-600"
+                              : "text-gray-500"
+                          )}
+                        >
+                          Uma letra maiúscula (A-Z)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "w-3 h-3 rounded-full flex items-center justify-center",
+                            /\d/.test(watchPassword)
+                              ? "bg-green-500 text-white"
+                              : "bg-gray-300"
+                          )}
+                        >
+                          {/\d/.test(watchPassword) ? "✓" : ""}
+                        </span>
+                        <span
+                          className={cn(
+                            /\d/.test(watchPassword)
+                              ? "text-green-600"
+                              : "text-gray-500"
+                          )}
+                        >
+                          Um número (0-9)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "w-3 h-3 rounded-full flex items-center justify-center",
+                            /[!@#$%^&*(),.?":{}|<>]/.test(watchPassword)
+                              ? "bg-green-500 text-white"
+                              : "bg-gray-300"
+                          )}
+                        >
+                          {/[!@#$%^&*(),.?":{}|<>]/.test(watchPassword)
+                            ? "✓"
+                            : ""}
+                        </span>
+                        <span
+                          className={cn(
+                            /[!@#$%^&*(),.?":{}|<>]/.test(watchPassword)
+                              ? "text-green-600"
+                              : "text-gray-500"
+                          )}
+                        >
+                          Um símbolo (!@#$%^&*(),.?":{}|{`<`}
+                          {">"})
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -369,12 +453,13 @@ export default function RegisterPage() {
                           className={cn(
                             "h-2 rounded-full transition-all duration-300",
                             passwordStrength.score <= 1 && "bg-red-500",
-                            passwordStrength.score === 2 && "bg-yellow-500",
-                            passwordStrength.score === 3 && "bg-blue-500",
-                            passwordStrength.score >= 4 && "bg-green-500"
+                            passwordStrength.score === 2 && "bg-orange-500",
+                            passwordStrength.score === 3 && "bg-yellow-500",
+                            passwordStrength.score === 4 && "bg-blue-500",
+                            passwordStrength.score >= 5 && "bg-green-500"
                           )}
                           style={{
-                            width: `${(passwordStrength.score / 4) * 100}%`,
+                            width: `${(passwordStrength.score / 5) * 100}%`,
                           }}
                         />
                       </div>
@@ -385,13 +470,13 @@ export default function RegisterPage() {
                   </div>
                 )}
 
-                {/* Alerta específico para comprimento da senha */}
+                {/* Alerta específico para requisitos da senha */}
                 {showPasswordLengthAlert && (
                   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                     <p className="text-sm text-yellow-700 flex items-center gap-2">
                       <AlertCircle className="w-4 h-4" />
-                      Senha deve ter pelo menos 8 caracteres e uma letra
-                      maiúscula
+                      Senha deve ter pelo menos 8 caracteres, uma letra
+                      maiúscula, um número e um símbolo
                     </p>
                   </div>
                 )}
