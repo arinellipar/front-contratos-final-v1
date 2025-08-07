@@ -224,7 +224,7 @@ export function useNotifications(): UseNotificationsReturn {
 
       // Buscar contratos reais do banco de dados
       const [contractsResponse, systemNotifications] = await Promise.all([
-        contractsApi.getAll({ pageSize: 1000, sortBy: "dataVencimento" }),
+        contractsApi.getAll({ pageSize: 1000, sortBy: "dataContrato" }),
         generateSystemNotifications(),
       ]);
 

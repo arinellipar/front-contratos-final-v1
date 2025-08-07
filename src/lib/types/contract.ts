@@ -60,8 +60,6 @@ export enum Filial {
  * Base contract interface matching the backend Contract model
  */
 export interface Contract {
-  empresa: string;
-  dataVencimento: string;
   id: number;
   contrato: string;
   contratante: string;
