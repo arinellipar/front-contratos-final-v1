@@ -260,12 +260,16 @@ export function ContractTable({
                     {contract.prazo} dias
                   </td>
                   <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
-                    {contract.dataVencimento &&
-                    !isNaN(new Date(contract.dataVencimento).getTime())
-                      ? new Date(contract.dataVencimento).toLocaleDateString(
-                          "pt-BR"
-                        )
-                      : "—"}
+                    {(() => {
+                      const dataContrato = new Date(contract.dataContrato);
+                      const dataVencimento = new Date(dataContrato);
+                      dataVencimento.setDate(
+                        dataVencimento.getDate() + (contract.prazo || 0)
+                      );
+                      return !isNaN(dataVencimento.getTime())
+                        ? dataVencimento.toLocaleDateString("pt-BR")
+                        : "—";
+                    })()}
                   </td>
                   <td className="px-2 py-2 whitespace-nowrap">
                     <span
@@ -478,12 +482,16 @@ export function ContractTable({
                       Vencimento:
                     </span>
                     <p className="text-gray-900">
-                      {contract.dataVencimento &&
-                      !isNaN(new Date(contract.dataVencimento).getTime())
-                        ? new Date(contract.dataVencimento).toLocaleDateString(
-                            "pt-BR"
-                          )
-                        : "—"}
+                      {(() => {
+                        const dataContrato = new Date(contract.dataContrato);
+                        const dataVencimento = new Date(dataContrato);
+                        dataVencimento.setDate(
+                          dataVencimento.getDate() + (contract.prazo || 0)
+                        );
+                        return !isNaN(dataVencimento.getTime())
+                          ? dataVencimento.toLocaleDateString("pt-BR")
+                          : "—";
+                      })()}
                     </p>
                   </div>
                   <div>

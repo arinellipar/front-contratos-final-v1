@@ -393,7 +393,7 @@ export default function Sidebar({
                 {item.description}
               </p>
             </div>
-            {badgeValue !== undefined && badgeValue > 0 && (
+            {badgeValue !== undefined && Number(badgeValue) > 0 && (
               <span
                 className={cn(
                   "inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full",

@@ -93,7 +93,7 @@ export default function ContractsPage() {
     gcTime: 2 * 60 * 1000, // 2 minutos
     refetchOnWindowFocus: (query) => {
       // Não refetch no foco se há erro 500 ou 401
-      if (query.state.error) {
+      if (query.state?.error) {
         const status = (query.state.error as any)?.response?.status;
         if (status === 500 || status === 401) {
           return false;
@@ -101,9 +101,9 @@ export default function ContractsPage() {
       }
       return true;
     },
-    refetchInterval: (data, query) => {
+    refetchInterval: (query) => {
       // Não fazer refetch automático se há erro 500 ou 401
-      if (query.state.error) {
+      if (query.state?.error) {
         const status = (query.state.error as any)?.response?.status;
         if (status === 500 || status === 401) {
           console.warn(
@@ -141,9 +141,9 @@ export default function ContractsPage() {
     queryKey: ["contracts-stats"],
     queryFn: () => contractsApi.getStatistics(),
     staleTime: 30000,
-    refetchInterval: (data, query) => {
+    refetchInterval: (query) => {
       // Não fazer refetch automático se há erro 500 ou 401
-      if (query.state.error) {
+      if (query.state?.error) {
         const status = (query.state.error as any)?.response?.status;
         if (status === 500 || status === 401) {
           console.warn(
@@ -225,16 +225,16 @@ export default function ContractsPage() {
   });
 
   // Dados dos contratos
-  const contracts = contractsResponse?.data || [];
-  const totalPages = contractsResponse?.totalPages || 1;
-  const totalItems = contractsResponse?.totalItems || 0;
+  const contracts = (contractsResponse as any)?.data || [];
+  const totalPages = (contractsResponse as any)?.totalPages || 1;
+  const totalItems = (contractsResponse as any)?.totalItems || 0;
 
   // Log para verificar ordenação
   useEffect(() => {
     if (contracts.length > 0) {
       console.log(
         "📅 Contratos ordenados por data:",
-        contracts.map((c) => ({
+        contracts.map((c: Contract) => ({
           id: c.id,
           contrato: c.contrato,
           dataContrato: c.dataContrato,
@@ -246,15 +246,15 @@ export default function ContractsPage() {
 
   // Estatísticas calculadas
   const quickStats = useMemo(() => {
-    const totalValue = contracts.reduce((sum, contract) => {
+    const totalValue = contracts.reduce((sum: number, contract: Contract) => {
       return sum + (contract.valorTotalContrato || 0);
     }, 0);
 
     const activeContracts = contracts.filter(
-      (contract) => contract.status === 1
+      (contract: Contract) => contract.status === 1
     ).length;
 
-    const expiringContracts = contracts.filter((contract) => {
+    const expiringContracts = contracts.filter((contract: Contract) => {
       const expiryDate = new Date(contract.dataContrato);
       expiryDate.setDate(expiryDate.getDate() + (contract.prazo || 365));
       const daysUntilExpiry = Math.ceil(

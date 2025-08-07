@@ -407,7 +407,7 @@ class AdvancedSearchEngine {
       contratada: highlightQuery(contract.contratada),
       objeto: highlightQuery(contract.objeto),
       categoriaContrato: highlightQuery(contract.categoriaContrato),
-      filial: highlightQuery(contract.filial),
+      filial: highlightQuery(String(contract.filial)),
       observacoes: highlightQuery(contract.observacoes || ""),
     };
   }
@@ -495,7 +495,7 @@ class AdvancedSearchEngine {
     // Branch filter
     if (
       filters.branches?.length &&
-      !filters.branches.includes(contract.filial)
+      !filters.branches.includes(String(contract.filial))
     ) {
       return false;
     }

@@ -1,7 +1,7 @@
-import React from 'react';
-import { ResponsiveText } from './ResponsiveText';
-import { MetricCard } from './MetricCard';
-import { Target, DollarSign, Shield, AlertTriangle } from 'lucide-react';
+import React from "react";
+import { ResponsiveText } from "./ResponsiveText";
+import { MetricCard } from "./MetricCard";
+import { Target, DollarSign, Shield, AlertTriangle } from "lucide-react";
 
 export const ResponsiveTextExample: React.FC = () => {
   return (
@@ -12,7 +12,9 @@ export const ResponsiveTextExample: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Exemplos com diferentes tamanhos de texto */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Textos Curtos (≤6 caracteres)</h3>
+            <h3 className="text-lg font-semibold">
+              Textos Curtos (≤6 caracteres)
+            </h3>
             <div className="bg-gray-100 p-4 rounded">
               <ResponsiveText baseFontSize="text-3xl">100%</ResponsiveText>
             </div>
@@ -22,9 +24,13 @@ export const ResponsiveTextExample: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Textos Médios (7-10 caracteres)</h3>
+            <h3 className="text-lg font-semibold">
+              Textos Médios (7-10 caracteres)
+            </h3>
             <div className="bg-gray-100 p-4 rounded">
-              <ResponsiveText baseFontSize="text-3xl">R$ 45.780,00</ResponsiveText>
+              <ResponsiveText baseFontSize="text-3xl">
+                R$ 45.780,00
+              </ResponsiveText>
             </div>
             <div className="bg-gray-100 p-4 rounded">
               <ResponsiveText baseFontSize="text-3xl">1.234.567</ResponsiveText>
@@ -32,22 +38,34 @@ export const ResponsiveTextExample: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Textos Longos (11-15 caracteres)</h3>
+            <h3 className="text-lg font-semibold">
+              Textos Longos (11-15 caracteres)
+            </h3>
             <div className="bg-gray-100 p-4 rounded">
-              <ResponsiveText baseFontSize="text-3xl">R$ 123.456.789,00</ResponsiveText>
+              <ResponsiveText baseFontSize="text-3xl">
+                R$ 123.456.789,00
+              </ResponsiveText>
             </div>
             <div className="bg-gray-100 p-4 rounded">
-              <ResponsiveText baseFontSize="text-3xl">99.999.999.999</ResponsiveText>
+              <ResponsiveText baseFontSize="text-3xl">
+                99.999.999.999
+              </ResponsiveText>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Textos Muito Longos (>15 caracteres)</h3>
+            <h3 className="text-lg font-semibold">
+              Textos Muito Longos (&gt;15 caracteres)
+            </h3>
             <div className="bg-gray-100 p-4 rounded">
-              <ResponsiveText baseFontSize="text-3xl">R$ 1.234.567.890,00</ResponsiveText>
+              <ResponsiveText baseFontSize="text-3xl">
+                R$ 1.234.567.890,00
+              </ResponsiveText>
             </div>
             <div className="bg-gray-100 p-4 rounded">
-              <ResponsiveText baseFontSize="text-3xl">999.999.999.999.999</ResponsiveText>
+              <ResponsiveText baseFontSize="text-3xl">
+                999.999.999.999.999
+              </ResponsiveText>
             </div>
           </div>
         </div>
@@ -55,7 +73,9 @@ export const ResponsiveTextExample: React.FC = () => {
 
       {/* Exemplo dos cards de métricas */}
       <div className="bg-white rounded-lg p-6 shadow-lg">
-        <h2 className="text-2xl font-bold mb-4">Cards de Métricas Responsivos</h2>
+        <h2 className="text-2xl font-bold mb-4">
+          Cards de Métricas Responsivos
+        </h2>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <MetricCard
@@ -107,7 +127,9 @@ export const ResponsiveTextExample: React.FC = () => {
 
       {/* Exemplo com containers de diferentes tamanhos */}
       <div className="bg-white rounded-lg p-6 shadow-lg">
-        <h2 className="text-2xl font-bold mb-4">Teste com Containers de Diferentes Tamanhos</h2>
+        <h2 className="text-2xl font-bold mb-4">
+          Teste com Containers de Diferentes Tamanhos
+        </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-gray-100 p-4 rounded w-full">
