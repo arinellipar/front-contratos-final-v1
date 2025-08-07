@@ -63,40 +63,29 @@ export const contractsApi = {
     } catch (error: any) {
       console.error("❌ Erro ao buscar contratos:", error);
 
-      // Se for erro 500, pode ser problema de migração no backend
-      if (error?.response?.status === 500) {
-        console.warn(
-          "⚠️ Erro 500 detectado - possivelmente migrações não aplicadas no backend"
-        );
+      const empty: PaginatedResponse<Contract> = {
+        data: [],
+        totalItems: 0,
+        totalPages: 0,
+        currentPage: Number(filters?.page ?? 1),
+        pageSize: Number(filters?.pageSize ?? 10),
+        hasNextPage: false,
+        hasPreviousPage: false,
+      };
 
-        // Retornar dados vazios para evitar crash da aplicação
-        return {
-          data: [],
-          totalItems: 0,
-          totalPages: 0,
-          currentPage: 1,
-          pageSize: 10,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        };
-      }
-
-      // Se for erro 401, pode ser problema de autenticação
+      // 401: retornar lista vazia (app vai redirecionar por conta própria)
       if (error?.response?.status === 401) {
         console.warn("⚠️ Erro 401 detectado - problema de autenticação");
-
-        // Retornar dados vazios para evitar crash da aplicação
-        return {
-          data: [],
-          totalItems: 0,
-          totalPages: 0,
-          currentPage: 1,
-          pageSize: 10,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        };
+        return empty;
       }
 
+      // 404/500: retornar vazio para não quebrar UI; logs já foram emitidos
+      if (error?.response?.status === 404 || error?.response?.status === 500) {
+        console.warn("⚠️ Endpoint indisponível ou migrações pendentes");
+        return empty;
+      }
+
+      // Fallback: não mascarar outros erros desconhecidos
       throw error;
     }
   },

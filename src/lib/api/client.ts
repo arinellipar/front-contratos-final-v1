@@ -531,6 +531,26 @@ class ApiClient {
   }
 
   private handleApiError(error: AxiosError): void {
+    // Be selective about when to surface toasts to the user
+    const status = error.response?.status || 0;
+    const method = (error.config?.method || "").toUpperCase();
+    const url = error.config?.url || "";
+
+    // Many GET endpoints in dashboard can legitimately fail (e.g., migrations not applied)
+    // and upstream callers handle it gracefully. Avoid noisy toasts for these cases.
+    const isReadOnly = method === "GET";
+    const isContractsRead = /\/contracts(\/|\?|$)/.test(url || "");
+
+    if (
+      isReadOnly &&
+      (status >= 500 || status === 404) &&
+      (isContractsRead || true)
+    ) {
+      // Log but don't toast
+      console.warn("Silenced API error (read-only):", { status, method, url });
+      return;
+    }
+
     if (this.shouldSuppressError()) {
       return;
     }
