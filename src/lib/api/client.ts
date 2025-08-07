@@ -87,8 +87,10 @@ class ApiClient {
     // URL do backend - via proxy interno para evitar CORS em dev
     // Em produção, podemos manter chamadas diretas caso a origem seja a mesma
     const directApiUrl =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5058/api/v1";
-    const useProxy = process.env.NODE_ENV !== "production";
+      process.env.NEXT_PUBLIC_API_URL ||
+      "https://fradema-backend-api-crguetd0f7gth9e3.brazilsouth-01.azurewebsites.net/api/v1";
+    // Usar proxy em desenvolvimento para resolver CORS definitivamente
+    const useProxy = process.env.NODE_ENV === "development";
     const apiUrl = useProxy ? "/api/proxy" : directApiUrl;
 
     console.log("🔌 API Client initialized with URL:", apiUrl);

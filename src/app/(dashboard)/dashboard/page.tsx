@@ -74,6 +74,7 @@ import {
 } from "@/lib/utils/formatters";
 import { cn } from "@/lib/utils";
 import { getDynamicFontSize } from "@/lib/utils/responsiveText";
+import { MaintenanceBanner } from "@/components/ui/MaintenanceBanner";
 
 // Tipos para o dashboard
 interface DashboardMetrics {
@@ -297,6 +298,14 @@ export default function ModernDashboardPage() {
     setTimeout(() => setIsLoading(false), 1000);
   }, []);
 
+  // Verificar se há erros conhecidos que requerem banner de manutenção
+  const maintenanceError = statisticsError || dashboardError || systemError;
+  const showMaintenanceBanner =
+    maintenanceError &&
+    ((maintenanceError as any)?.response?.status === 500 ||
+      (maintenanceError as any)?.response?.status === 401 ||
+      (maintenanceError as any)?.response?.status === 404);
+
   const LoadingSkeleton = ({ className = "" }: { className?: string }) => (
     <div className={`animate-pulse ${className}`}>
       <div className="bg-gray-200 rounded-lg h-4 mb-2"></div>
@@ -336,6 +345,25 @@ export default function ModernDashboardPage() {
   if (isLoading || isLoadingAny) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/40 relative overflow-hidden">
+        {/* Banner de manutenção para erros conhecidos - mesmo no loading */}
+        {showMaintenanceBanner && (
+          <div className="relative z-10 p-6">
+            <MaintenanceBanner
+              error={maintenanceError}
+              onRetry={() => {
+                refetchStatistics();
+                refetchDashboardMetrics();
+                refetchSystemStats();
+              }}
+              isRetrying={
+                isRefetchingStatistics ||
+                isRefetchingDashboard ||
+                isRefetchingSystem
+              }
+            />
+          </div>
+        )}
+
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
@@ -390,6 +418,25 @@ export default function ModernDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/40 relative overflow-hidden">
+      {/* Banner de manutenção para erros conhecidos */}
+      {showMaintenanceBanner && (
+        <div className="relative z-10 p-6">
+          <MaintenanceBanner
+            error={maintenanceError}
+            onRetry={() => {
+              refetchStatistics();
+              refetchDashboardMetrics();
+              refetchSystemStats();
+            }}
+            isRetrying={
+              isRefetchingStatistics ||
+              isRefetchingDashboard ||
+              isRefetchingSystem
+            }
+          />
+        </div>
+      )}
+
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse"></div>

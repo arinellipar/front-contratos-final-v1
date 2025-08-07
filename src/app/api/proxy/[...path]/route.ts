@@ -19,10 +19,11 @@ function buildTargetUrl(req: NextRequest, pathSegments: string[]): string {
 
 async function forward(
   req: NextRequest,
-  context: { params: { path: string[] } },
+  context: { params: Promise<{ path: string[] }> },
   method: string
 ) {
-  const targetUrl = buildTargetUrl(req, context.params.path || []);
+  const params = await context.params;
+  const targetUrl = buildTargetUrl(req, params.path || []);
 
   const headers = new Headers(req.headers);
   // Remove hop-by-hop/host specific headers that may break upstream
@@ -72,35 +73,35 @@ async function forward(
 
 export async function GET(
   req: NextRequest,
-  context: { params: { path: string[] } }
+  context: { params: Promise<{ path: string[] }> }
 ) {
   return forward(req, context, "GET");
 }
 
 export async function POST(
   req: NextRequest,
-  context: { params: { path: string[] } }
+  context: { params: Promise<{ path: string[] }> }
 ) {
   return forward(req, context, "POST");
 }
 
 export async function PUT(
   req: NextRequest,
-  context: { params: { path: string[] } }
+  context: { params: Promise<{ path: string[] }> }
 ) {
   return forward(req, context, "PUT");
 }
 
 export async function PATCH(
   req: NextRequest,
-  context: { params: { path: string[] } }
+  context: { params: Promise<{ path: string[] }> }
 ) {
   return forward(req, context, "PATCH");
 }
 
 export async function DELETE(
   req: NextRequest,
-  context: { params: { path: string[] } }
+  context: { params: Promise<{ path: string[] }> }
 ) {
   return forward(req, context, "DELETE");
 }

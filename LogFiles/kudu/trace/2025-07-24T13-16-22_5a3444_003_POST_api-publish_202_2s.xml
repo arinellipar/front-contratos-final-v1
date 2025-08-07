@@ -1,0 +1,16 @@
+<step title="Incoming Request" date="2025-07-24T13:16:22.058" instance="5a3444" url="/api/publish?async=true&amp;deployer=GITHUB_ONE_DEPLOY&amp;type=zip&amp;message=%7B%22type%22%3A%22deployment%22%2C%22sha%22%3A%221bbb9337b1fefe3f69fd2db731c826b7fbaddd08%22%2C%22repoName%22%3A%22ti5fradema%2Fdotnetbackend%22%2C%22actor%22%3A%22ti5fradema%22%2C%22slotName%22%3A%22Production%22%2C%22commitMessage%22%3A%22ajustes%20vercel%22%7D" method="POST" type="request" pid="821,1,36" Host="fradema-backend-api-crguetd0f7gth9e3.scm.brazilsouth-01.azurewebsites.net" User-Agent="GITHUBACTIONS_DeployWebAppToAzure_1b8b54719132ce29413f4e5fc2eb3c3506c904d155f96f70d2dfa14bcd382c80" Authorization="Bea..." Content-Type="application/octet-stream" Cookie="ARRAffinity=5a344463a661cb069c77718e17cbda0d74e5d2718efd75f81da553772423fb97;Path=/;HttpOnly;Secure;Domain=fradema-backend-api-crguetd0f7gth9e3.scm.brazilsouth-01.azurewebsites.net; ARRAffinitySameSite=5a344463a661cb069c77718e17cbda0d74e5d2718efd75f81da553772423fb97;Path=/;HttpOnly;SameSite=None;Secure;Domain=fradema-backend-api-crguetd0f7gth9e3.scm.brazilsouth-01.azurewebsites.net" Transfer-Encoding="chunked" X-ARR-LOG-ID="3b62ece0-aff9-4876-8b85-c82a4badf06c" CLIENT-IP="172.200.23.67:25472" X-SITE-DEPLOYMENT-ID="fradema-backend-api" WAS-DEFAULT-HOSTNAME="fradema-backend-api-crguetd0f7gth9e3.scm.brazilsouth-01.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/publish?async=true&amp;deployer=GITHUB_ONE_DEPLOY&amp;type=zip&amp;message=%7B%22type%22%3A%22deployment%22%2C%22sha%22%3A%221bbb9337b1fefe3f69fd2db731c826b7fbaddd08%22%2C%22repoName%22%3A%22ti5fradema%2Fdotnetbackend%22%2C%22actor%22%3A%22ti5fradema%22%2C%22slotName%22%3A%22Production%22%2C%22commitMessage%22%3A%22ajustes%20vercel%22%7D" X-Client-IP="172.200.23.67" X-Client-Port="25472" >
+  <step title="OneDeploy" date="2025-07-24T13:16:22.084" >
+    <step title="None repository commit" date="2025-07-24T13:16:22.088" >
+      <step title="Commit id: d8649275-2e2b-479d-87de-c3189334d774" date="2025-07-24T13:16:22.089" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 1ms -->
+    </step><!-- duration: 3ms -->
+    <step title="Starting PushDeployAsync" date="2025-07-24T13:16:22.093" /><!-- duration: 1ms -->
+    <step title="Writing artifact to /tmp/zipdeploy/64fabc99-b118-40b6-a2d8-668413eda1f8.zip" date="2025-07-24T13:16:22.114" >
+      <step title="Writing multipart request body to /tmp/zipdeploy/64fabc99-b118-40b6-a2d8-668413eda1f8.zip" date="2025-07-24T13:16:22.115" /><!-- duration: 6ms -->
+    </step><!-- duration: 1808ms -->
+    <step title="Start deployment in the background" date="2025-07-24T13:16:23.931" >
+      <step title="Acquiring Deployment Lock" date="2025-07-24T13:16:23.962" /><!-- duration: 1ms -->
+      <step title="Acquired Deployment Lock" date="2025-07-24T13:16:23.990" /><!-- duration: 1ms -->
+    </step><!-- duration: 141ms -->
+  </step><!-- duration: 1991ms -->
+  <step title="Outgoing response" date="2025-07-24T13:16:24.079" type="response" statusCode="202" statusText="Accepted" /><!-- duration: 1ms -->
+</step><!-- duration: 2025ms -->

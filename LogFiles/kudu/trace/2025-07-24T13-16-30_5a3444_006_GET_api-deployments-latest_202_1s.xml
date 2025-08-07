@@ -1,0 +1,9 @@
+<step title="Incoming Request" date="2025-07-24T13:16:30.813" instance="5a3444" url="/api/deployments/latest?deployer=OneDeploy&amp;time=2025-07-24_13-16-24Z" method="GET" type="request" pid="821,1,28" Host="fradema-backend-api-crguetd0f7gth9e3.scm.brazilsouth-01.azurewebsites.net" User-Agent="GITHUBACTIONS_DeployWebAppToAzure_1b8b54719132ce29413f4e5fc2eb3c3506c904d155f96f70d2dfa14bcd382c80" Authorization="Bea..." Content-Type="application/json; charset=utf-8" Cookie="ARRAffinity=5a344463a661cb069c77718e17cbda0d74e5d2718efd75f81da553772423fb97;Path=/;HttpOnly;Secure;Domain=fradema-backend-api-crguetd0f7gth9e3.scm.brazilsouth-01.azurewebsites.net; ARRAffinitySameSite=5a344463a661cb069c77718e17cbda0d74e5d2718efd75f81da553772423fb97;Path=/;HttpOnly;SameSite=None;Secure;Domain=fradema-backend-api-crguetd0f7gth9e3.scm.brazilsouth-01.azurewebsites.net" Content-Length="0" X-ARR-LOG-ID="97370a4c-e244-4d03-b6ea-f4c4d088cce8" CLIENT-IP="172.200.23.67:25473" X-SITE-DEPLOYMENT-ID="fradema-backend-api" WAS-DEFAULT-HOSTNAME="fradema-backend-api-crguetd0f7gth9e3.scm.brazilsouth-01.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/deployments/latest?deployer=OneDeploy&amp;time=2025-07-24_13-16-24Z" X-Client-IP="172.200.23.67" X-Client-Port="25473" >
+  <step title="Cleanup Xml Logs" date="2025-07-24T13:16:30.818" /><!-- duration: 5ms -->
+  <step title="DeploymentService.GetResult" date="2025-07-24T13:16:30.833" >
+    <step title="DeploymentService.GetLatestDeployment" date="2025-07-24T13:16:30.853" >
+      <step title="DeploymentManager.GetResults" date="2025-07-24T13:16:30.856" /><!-- duration: 494ms -->
+    </step><!-- duration: 504ms -->
+  </step><!-- duration: 525ms -->
+  <step title="Outgoing response" date="2025-07-24T13:16:31.364" type="response" statusCode="202" statusText="Accepted" /><!-- duration: 11ms -->
+</step><!-- duration: 564ms -->

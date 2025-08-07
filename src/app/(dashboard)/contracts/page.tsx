@@ -53,6 +53,7 @@ import {
 import { formatCurrency } from "@/lib/utils/formatters";
 import toast from "react-hot-toast";
 import { saveAs } from "file-saver";
+import { MaintenanceBanner } from "@/components/ui/MaintenanceBanner";
 
 export default function ContractsPage() {
   const router = useRouter();
@@ -375,55 +376,24 @@ export default function ContractsPage() {
     queryClient.invalidateQueries({ queryKey: ["contracts-stats"] });
   }, [refetch, queryClient]);
 
-  // Renderização de erro
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Contratos"
-          description="Gerencie todos os contratos da empresa"
-          actions={
-            <Button onClick={handleRefresh} disabled={isRefetching}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Tentar Novamente
-            </Button>
-          }
-        />
-
-        <Card>
-          <CardContent className="p-8">
-            <div className="text-center">
-              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Erro ao carregar contratos
-              </h3>
-              <p className="text-gray-600 mb-4">
-                {(error as any)?.message ||
-                  "Ocorreu um erro ao carregar a lista de contratos."}
-              </p>
-              {(error as any)?.response?.data && (
-                <details className="text-left mb-4">
-                  <summary className="cursor-pointer text-sm text-gray-500">
-                    Detalhes do erro
-                  </summary>
-                  <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto">
-                    {JSON.stringify((error as any).response.data, null, 2)}
-                  </pre>
-                </details>
-              )}
-              <Button onClick={handleRefresh} disabled={isRefetching}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Tentar Novamente
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Renderização com banner de manutenção para erros
+  const showMaintenanceBanner =
+    error &&
+    ((error as any)?.response?.status === 500 ||
+      (error as any)?.response?.status === 401 ||
+      (error as any)?.response?.status === 404);
 
   return (
     <div className="space-y-6">
+      {/* Banner de manutenção para erros conhecidos */}
+      {showMaintenanceBanner && (
+        <MaintenanceBanner
+          error={error}
+          onRetry={handleRefresh}
+          isRetrying={isRefetching}
+        />
+      )}
+
       {/* Cabeçalho da página */}
       <PageHeader
         title="Contratos"

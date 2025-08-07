@@ -52,6 +52,14 @@ export const contractsApi = {
       });
     }
 
+    // Garantir parâmetros de paginação padrão
+    if (!params.get("page")) {
+      params.set("page", String(filters?.page ?? 1));
+    }
+    if (!params.get("pageSize")) {
+      params.set("pageSize", String(filters?.pageSize ?? 10));
+    }
+
     if (forceRefresh) {
       params.append("forceRefresh", "true");
     }

@@ -1,0 +1,78 @@
+2025-08-06T23:32:29.2959051Z Container start method called.
+2025-08-06T23:32:29.2960976Z Establishing network.
+2025-08-06T23:32:29.2962655Z Pulling image: appsvc/dotnetcore:8.0_20250709.6.tuxprod.
+2025-08-06T23:32:30.5926344Z Container is starting.
+2025-08-06T23:32:30.5936874Z Establishing user namespace if not established already.
+2025-08-06T23:32:30.5948113Z Establishing network if not established already.
+2025-08-06T23:32:30.5955181Z Mounting volumes.
+2025-08-06T23:32:30.5960792Z Nested mountpoint 
+2025-08-06T23:32:30.6035998Z Nested mountpoint volatile/logs
+2025-08-06T23:32:30.6073570Z Nested mountpoint 
+2025-08-06T23:32:30.6319014Z Nested mountpoint 
+2025-08-06T23:32:30.6328768Z Nested mountpoint 
+2025-08-06T23:32:30.6339211Z Nested mountpoint 
+2025-08-06T23:32:30.6575914Z Nested mountpoint 
+2025-08-06T23:32:31.0967190Z Creating container.
+2025-08-06T23:32:31.0969329Z Creating pipes for streaming container io.
+2025-08-06T23:32:31.0979904Z Creating stdout named pipe at /podr/container/pipe/46355ba9e3bc_fradema-backend-api/stdout_844af0f2455645c687fbb1bdd067765d.
+2025-08-06T23:32:31.0983234Z Successfully created stdout named pipe at: /podr/container/pipe/46355ba9e3bc_fradema-backend-api/stdout_844af0f2455645c687fbb1bdd067765d.
+2025-08-06T23:32:31.0985516Z Opening named pipe /podr/container/pipe/46355ba9e3bc_fradema-backend-api/stdout_844af0f2455645c687fbb1bdd067765d for reading in non-blocking mode.
+2025-08-06T23:32:31.0988057Z Successfully opened named pipe: /podr/container/pipe/46355ba9e3bc_fradema-backend-api/stdout_844af0f2455645c687fbb1bdd067765d.
+2025-08-06T23:32:31.0991170Z Successfully removed non-blocking flag from /podr/container/pipe/46355ba9e3bc_fradema-backend-api/stdout_844af0f2455645c687fbb1bdd067765d.
+2025-08-06T23:32:31.0994061Z Creating stderr named pipe at /podr/container/pipe/46355ba9e3bc_fradema-backend-api/stderr_524cb9664fbb460da7a39894dfa90863.
+2025-08-06T23:32:31.0997405Z Successfully created stderr named pipe at: /podr/container/pipe/46355ba9e3bc_fradema-backend-api/stderr_524cb9664fbb460da7a39894dfa90863.
+2025-08-06T23:32:31.0998706Z Opening named pipe /podr/container/pipe/46355ba9e3bc_fradema-backend-api/stderr_524cb9664fbb460da7a39894dfa90863 for reading in non-blocking mode.
+2025-08-06T23:32:31.1003783Z Successfully opened named pipe: /podr/container/pipe/46355ba9e3bc_fradema-backend-api/stderr_524cb9664fbb460da7a39894dfa90863.
+2025-08-06T23:32:31.1006018Z Successfully removed non-blocking flag from /podr/container/pipe/46355ba9e3bc_fradema-backend-api/stderr_524cb9664fbb460da7a39894dfa90863.
+2025-08-06T23:32:31.1008961Z Creating container with image: appsvc/dotnetcore:8.0_20250709.6.tuxprod from registry: 10.1.0.4:13209 and fully qualified image name: 10.1.0.4:13209/appsvc/dotnetcore:8.0_20250709.6.tuxprod
+2025-08-06T23:32:31.8212424Z Starting container: 46355ba9e3bc_fradema-backend-api.
+2025-08-06T23:32:31.8377557Z Starting watchers and probes.
+2025-08-06T23:32:31.8380146Z Starting metrics collection.
+2025-08-06T23:32:31.8381776Z Container is running.
+2025-08-06T23:32:32.8795990Z Container start method finished after 3573 ms.
+2025-08-06T23:32:34.0054214Z Site startup probe failed after 1.1130813 seconds.
+2025-08-06T23:32:34.0631752Z Failed to start site. Revert by stopping site.
+2025-08-06T23:32:34.0801654Z Container is terminating. Grace period: 5 seconds.
+2025-08-06T23:32:34.0953985Z Stop and delete container. Retry count = 0
+2025-08-06T23:32:34.0958004Z Stopping container: 46355ba9e3bc_fradema-backend-api.
+2025-08-06T23:32:39.4047047Z Deleting container: 46355ba9e3bc_fradema-backend-api. Retry count = 0
+2025-08-06T23:32:39.5855594Z Container spec TerminationMessagePolicy  path 
+2025-08-06T23:32:39.5861659Z Container is terminated. Total time elapsed: 5505 ms.
+2025-08-06T23:32:39.5887177Z Site container: fradema-backend-api terminated during site startup.
+2025-08-06T23:32:39.5896292Z Site: fradema-backend-api stopped.
+2025-08-06T23:33:00.3428738Z Site: fradema-backend-api stopped.
+2025-08-06T23:33:20.8925147Z Container start method called.
+2025-08-06T23:33:20.8926630Z Establishing network.
+2025-08-06T23:33:20.8927840Z Pulling image: appsvc/dotnetcore:8.0_20250709.6.tuxprod.
+2025-08-06T23:33:21.2839760Z Container is starting.
+2025-08-06T23:33:21.2843478Z Establishing user namespace if not established already.
+2025-08-06T23:33:21.2847877Z Establishing network if not established already.
+2025-08-06T23:33:21.2849845Z Mounting volumes.
+2025-08-06T23:33:21.2853326Z Nested mountpoint 
+2025-08-06T23:33:21.2874958Z Nested mountpoint volatile/logs
+2025-08-06T23:33:21.2896935Z Nested mountpoint 
+2025-08-06T23:33:21.2919910Z Nested mountpoint 
+2025-08-06T23:33:21.2935537Z Nested mountpoint 
+2025-08-06T23:33:21.2950902Z Nested mountpoint 
+2025-08-06T23:33:21.3007851Z Nested mountpoint 
+2025-08-06T23:33:21.5716910Z Creating container.
+2025-08-06T23:33:21.5718130Z Creating pipes for streaming container io.
+2025-08-06T23:33:21.5719290Z Creating stdout named pipe at /podr/container/pipe/361f82be19ac_fradema-backend-api/stdout_9fb3bfc06e2243509b605fc8fd29c8c3.
+2025-08-06T23:33:21.5770303Z Successfully created stdout named pipe at: /podr/container/pipe/361f82be19ac_fradema-backend-api/stdout_9fb3bfc06e2243509b605fc8fd29c8c3.
+2025-08-06T23:33:21.5776781Z Opening named pipe /podr/container/pipe/361f82be19ac_fradema-backend-api/stdout_9fb3bfc06e2243509b605fc8fd29c8c3 for reading in non-blocking mode.
+2025-08-06T23:33:21.5783062Z Successfully opened named pipe: /podr/container/pipe/361f82be19ac_fradema-backend-api/stdout_9fb3bfc06e2243509b605fc8fd29c8c3.
+2025-08-06T23:33:21.5789902Z Successfully removed non-blocking flag from /podr/container/pipe/361f82be19ac_fradema-backend-api/stdout_9fb3bfc06e2243509b605fc8fd29c8c3.
+2025-08-06T23:33:21.5796271Z Creating stderr named pipe at /podr/container/pipe/361f82be19ac_fradema-backend-api/stderr_568c27d0db884cadb6e442de905b2fd7.
+2025-08-06T23:33:21.5802850Z Successfully created stderr named pipe at: /podr/container/pipe/361f82be19ac_fradema-backend-api/stderr_568c27d0db884cadb6e442de905b2fd7.
+2025-08-06T23:33:21.5809289Z Opening named pipe /podr/container/pipe/361f82be19ac_fradema-backend-api/stderr_568c27d0db884cadb6e442de905b2fd7 for reading in non-blocking mode.
+2025-08-06T23:33:21.5816019Z Successfully opened named pipe: /podr/container/pipe/361f82be19ac_fradema-backend-api/stderr_568c27d0db884cadb6e442de905b2fd7.
+2025-08-06T23:33:21.5822402Z Successfully removed non-blocking flag from /podr/container/pipe/361f82be19ac_fradema-backend-api/stderr_568c27d0db884cadb6e442de905b2fd7.
+2025-08-06T23:33:21.5828647Z Creating container with image: appsvc/dotnetcore:8.0_20250709.6.tuxprod from registry: 10.1.0.4:13209 and fully qualified image name: 10.1.0.4:13209/appsvc/dotnetcore:8.0_20250709.6.tuxprod
+2025-08-06T23:33:21.7747474Z Starting container: 361f82be19ac_fradema-backend-api.
+2025-08-06T23:33:21.7937034Z Starting watchers and probes.
+2025-08-06T23:33:21.7949559Z Starting metrics collection.
+2025-08-06T23:33:21.7993329Z Container is running.
+2025-08-06T23:33:21.8348458Z Container start method finished after 942 ms.
+2025-08-06T23:33:31.8991563Z Site startup probe succeeded after 10.0636861 seconds.
+2025-08-06T23:33:31.9332339Z Site started.
+2025-08-06T23:33:31.9415107Z Site is running with deployment version: 09a13bb1-6ce6-417a-81d3-32ce64fc8aca
