@@ -93,17 +93,44 @@ export default function ContractsPage() {
     gcTime: 2 * 60 * 1000, // 2 minutos
     refetchOnWindowFocus: true,
     refetchInterval: 30000, // Refetch a cada 30 segundos
-    retry: 3,
+    retry: (failureCount, error: any) => {
+      // Não tentar novamente se for erro 401 (não autorizado)
+      if (error?.response?.status === 401) {
+        console.error("❌ Erro de autenticação detectado:", error);
+        router.push("/login");
+        return false;
+      }
+      return failureCount < 3;
+    },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   // Query para estatísticas rápidas
-  const { data: stats } = useQuery({
+  const { data: stats, error: statsError } = useQuery({
     queryKey: ["contracts-stats"],
     queryFn: () => contractsApi.getStatistics(),
     staleTime: 30000,
     refetchInterval: 60000,
+    retry: (failureCount, error: any) => {
+      // Não tentar novamente se for erro 401 (não autorizado)
+      if (error?.response?.status === 401) {
+        console.error("❌ Erro de autenticação nas statistics:", error);
+        router.push("/login");
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
+
+  // Log errors for debugging
+  useEffect(() => {
+    if (error) {
+      console.error("❌ Erro ao carregar contratos:", error);
+    }
+    if (statsError) {
+      console.error("❌ Erro ao carregar statistics:", statsError);
+    }
+  }, [error, statsError]);
 
   // Mutation para deletar contrato
   const deleteMutation = useMutation({
@@ -152,7 +179,7 @@ export default function ContractsPage() {
   // Estatísticas calculadas
   const quickStats = useMemo(() => {
     const totalValue = contracts.reduce((sum, contract) => {
-      return sum + (contract.multa || 0);
+      return sum + (contract.valorTotalContrato || 0);
     }, 0);
 
     const activeContracts = contracts.filter(
@@ -244,8 +271,8 @@ export default function ContractsPage() {
           "pt-BR"
         ),
         "Prazo (dias)": contract.prazo,
-        "Valor da Multa": contract.multa
-          ? formatCurrency(contract.multa)
+        "Valor Total": contract.valorTotalContrato
+          ? formatCurrency(contract.valorTotalContrato)
           : "N/A",
         Categoria: contract.categoriaContrato,
         Filial: FilialDisplay[contract.filial]?.label || contract.filial,
@@ -440,7 +467,7 @@ export default function ContractsPage() {
                 formatCurrency(quickStats.totalValue)
               )}
             </div>
-            <p className="text-sm text-gray-600">Soma das multas</p>
+            <p className="text-sm text-gray-600">Valor total dos contratos</p>
           </CardContent>
         </Card>
       </div>
