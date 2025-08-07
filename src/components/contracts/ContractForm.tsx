@@ -1,8 +1,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useCurrencyFormat } from "@/hooks/useNumberFormat";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { contractsApi } from "@/lib/api/contracts";
@@ -143,15 +144,27 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
     },
   });
 
+  // Hook para formatação de moeda
+  const valorTotalFormat = useCurrencyFormat(
+    initialData?.valorTotalContrato ? Number(initialData.valorTotalContrato) : 0
+  );
+
   // Watch para tipo de pagamento e valor total
   const watchTipoPagamento = watch("tipoPagamento");
-  const watchValorTotal = watch("valorTotalContrato");
+  const watchValorTotal = valorTotalFormat.rawValue;
 
   // Calcular valor da parcela
   const valorParcela =
-    watchValorTotal && selectedParcelas > 0
-      ? Number(watchValorTotal) / selectedParcelas
+    valorTotalFormat.rawValue && selectedParcelas > 0
+      ? valorTotalFormat.rawValue / selectedParcelas
       : 0;
+
+  // Sincronizar valor formatado com o formulário
+  useEffect(() => {
+    if (valorTotalFormat.rawValue > 0) {
+      setValue("valorTotalContrato", valorTotalFormat.rawValue.toString());
+    }
+  }, [valorTotalFormat.rawValue, setValue]);
 
   const createMutation = useMutation({
     mutationFn: contractsApi.create,
@@ -241,7 +254,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
       toast.error("Setor responsável é obrigatório");
       return;
     }
-    if (!data.valorTotalContrato || Number(data.valorTotalContrato) <= 0) {
+    if (!valorTotalFormat.isValid || valorTotalFormat.rawValue <= 0) {
       toast.error("Valor total é obrigatório e deve ser maior que zero");
       return;
     }
@@ -274,42 +287,18 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
       multa: data.multa ? Number(data.multa) : undefined,
       avisoPrevia: data.avisoPrevia ? Number(data.avisoPrevia) : undefined,
       observacoes: data.observacoes?.trim(),
-      filial: data.filial,
+      filial: Number(data.filial) as Filial, // Garante que seja enviado como número
       categoriaContrato: String(data.categoriaContrato) as any, // Convert enum to string explicitly
       setorResponsavel: data.setorResponsavel.trim(),
-      valorTotalContrato: Number(data.valorTotalContrato),
-      tipoPagamento: data.tipoPagamento,
+      valorTotalContrato: valorTotalFormat.rawValue,
+      tipoPagamento: Number(data.tipoPagamento) as TipoPagamento, // Garante que seja enviado como número
       quantidadeParcelas: data.quantidadeParcelas
         ? Number(data.quantidadeParcelas)
         : undefined,
-      formaPagamento: data.formaPagamento,
+      formaPagamento: Number(data.formaPagamento) as FormaPagamento, // Garante que seja enviado como número
       dataFinal: data.dataFinal,
       arquivoPdf: selectedFile || undefined, // Garante que o arquivo vá para o backend
     };
-
-    console.log("🔍 Submit data after processing:", submitData);
-    console.log("📋 Validação dos dados:");
-    console.log(
-      `  - Contrato: "${submitData.contrato}" (${submitData.contrato.length} chars)`
-    );
-    console.log(
-      `  - Contratante: "${submitData.contratante}" (${submitData.contratante.length} chars)`
-    );
-    console.log(
-      `  - Contratada: "${submitData.contratada}" (${submitData.contratada.length} chars)`
-    );
-    console.log(
-      `  - Objeto: "${submitData.objeto}" (${submitData.objeto.length} chars)`
-    );
-    console.log(`  - DataContrato: "${submitData.dataContrato}"`);
-    console.log(`  - Prazo: ${submitData.prazo}`);
-    console.log(
-      `  - Filial: "${submitData.filial}" (${String(submitData.filial).length} chars)`
-    );
-    console.log(`  - CategoriaContrato: "${submitData.categoriaContrato}"`);
-    console.log(
-      `  - ArquivoPdf: ${submitData.arquivoPdf ? `File(${submitData.arquivoPdf.name})` : "undefined"}`
-    );
 
     if (selectedFile) {
       console.log("Enviando como FormData (com arquivo PDF)");
@@ -617,16 +606,27 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
             Valor Total do Contrato (R$) <span className="text-red-500">*</span>
           </label>
           <input
-            {...register("valorTotalContrato")}
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            value={valorTotalFormat.formattedValue}
+            onChange={(e) => valorTotalFormat.handleChange(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Ex: 15000.00"
+            placeholder="Ex: 60.000,00 ou 60,000.00"
           />
+          {valorTotalFormat.error && (
+            <p className="text-sm text-red-600">{valorTotalFormat.error}</p>
+          )}
           {errors.valorTotalContrato && (
             <p className="text-sm text-red-600">
               {errors.valorTotalContrato.message}
+            </p>
+          )}
+          {valorTotalFormat.rawValue > 0 && (
+            <p className="text-sm text-green-600">
+              Valor: R${" "}
+              {valorTotalFormat.rawValue.toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </p>
           )}
         </div>
@@ -722,8 +722,8 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
               {/* Grid de opções de parcelas */}
               <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2 mb-4 max-h-80 overflow-y-auto">
                 {Array.from({ length: 60 }, (_, i) => i + 1).map((parcela) => {
-                  const valorParcelaAtual = watchValorTotal
-                    ? Number(watchValorTotal) / parcela
+                  const valorParcelaAtual = valorTotalFormat.rawValue
+                    ? valorTotalFormat.rawValue / parcela
                     : 0;
                   const isSelected = selectedParcelas === parcela;
 
@@ -746,7 +746,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
                       `}
                     >
                       <div className="font-semibold">{parcela}x</div>
-                      {watchValorTotal && (
+                      {valorTotalFormat.rawValue > 0 && (
                         <div className="text-[10px] mt-1">
                           R${" "}
                           {valorParcelaAtual.toLocaleString("pt-BR", {
@@ -764,7 +764,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
               <input {...register("quantidadeParcelas")} type="hidden" />
 
               {/* Calculadora de Parcelas */}
-              {watchValorTotal && (
+              {valorTotalFormat.rawValue > 0 && (
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-4">
                   <h4 className="text-sm font-semibold text-blue-900 mb-3">
                     💰 Calculadora de Parcelas
@@ -772,7 +772,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
                   <div className="text-center">
                     <p className="text-lg font-bold text-gray-800">
                       Valor Total: R${" "}
-                      {Number(watchValorTotal).toLocaleString("pt-BR", {
+                      {valorTotalFormat.rawValue.toLocaleString("pt-BR", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
@@ -785,7 +785,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
               )}
 
               {/* Resumo da parcela selecionada */}
-              {watchValorTotal && selectedParcelas > 0 && (
+              {valorTotalFormat.rawValue > 0 && selectedParcelas > 0 && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -794,7 +794,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
                       </p>
                       <p className="text-xs text-green-700">
                         Valor total: R${" "}
-                        {Number(watchValorTotal).toLocaleString("pt-BR", {
+                        {valorTotalFormat.rawValue.toLocaleString("pt-BR", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
