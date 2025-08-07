@@ -284,8 +284,14 @@ export function ContractTable({
                     {contract.filial}
                   </td>
                   <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
-                    {contract.multa
-                      ? `R$ ${contract.multa.toLocaleString("pt-BR")}`
+                    {contract.valorTotalContrato
+                      ? `R$ ${contract.valorTotalContrato.toLocaleString(
+                          "pt-BR",
+                          {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          }
+                        )}`
                       : "—"}
                   </td>
                   <td className="px-2 py-2 whitespace-nowrap text-center">
