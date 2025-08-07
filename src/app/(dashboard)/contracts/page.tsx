@@ -91,15 +91,46 @@ export default function ContractsPage() {
     queryFn: () => contractsApi.getAll(filters, true),
     staleTime: 0, // Sempre considera stale para forçar refetch
     gcTime: 2 * 60 * 1000, // 2 minutos
-    refetchOnWindowFocus: true,
-    refetchInterval: 30000, // Refetch a cada 30 segundos
+    refetchOnWindowFocus: (query) => {
+      // Não refetch no foco se há erro 500 ou 401
+      if (query.state.error) {
+        const status = (query.state.error as any)?.response?.status;
+        if (status === 500 || status === 401) {
+          return false;
+        }
+      }
+      return true;
+    },
+    refetchInterval: (data, query) => {
+      // Não fazer refetch automático se há erro 500 ou 401
+      if (query.state.error) {
+        const status = (query.state.error as any)?.response?.status;
+        if (status === 500 || status === 401) {
+          console.warn(
+            "⚠️ Refetch automático desabilitado devido a erro",
+            status
+          );
+          return false;
+        }
+      }
+      return 30000; // 30 segundos normalmente
+    },
     retry: (failureCount, error: any) => {
+      const status = error?.response?.status;
+
       // Não tentar novamente se for erro 401 (não autorizado)
-      if (error?.response?.status === 401) {
+      if (status === 401) {
         console.error("❌ Erro de autenticação detectado:", error);
         router.push("/login");
         return false;
       }
+
+      // Não tentar novamente se for erro 500 (servidor)
+      if (status === 500) {
+        console.error("❌ Erro 500 detectado - parando tentativas:", error);
+        return false;
+      }
+
       return failureCount < 3;
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
@@ -110,14 +141,39 @@ export default function ContractsPage() {
     queryKey: ["contracts-stats"],
     queryFn: () => contractsApi.getStatistics(),
     staleTime: 30000,
-    refetchInterval: 60000,
+    refetchInterval: (data, query) => {
+      // Não fazer refetch automático se há erro 500 ou 401
+      if (query.state.error) {
+        const status = (query.state.error as any)?.response?.status;
+        if (status === 500 || status === 401) {
+          console.warn(
+            "⚠️ Refetch automático de statistics desabilitado devido a erro",
+            status
+          );
+          return false;
+        }
+      }
+      return 60000; // 60 segundos normalmente
+    },
     retry: (failureCount, error: any) => {
+      const status = error?.response?.status;
+
       // Não tentar novamente se for erro 401 (não autorizado)
-      if (error?.response?.status === 401) {
+      if (status === 401) {
         console.error("❌ Erro de autenticação nas statistics:", error);
         router.push("/login");
         return false;
       }
+
+      // Não tentar novamente se for erro 500 (servidor)
+      if (status === 500) {
+        console.error(
+          "❌ Erro 500 nas statistics detectado - parando tentativas:",
+          error
+        );
+        return false;
+      }
+
       return failureCount < 3;
     },
   });
