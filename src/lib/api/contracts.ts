@@ -44,7 +44,10 @@ export const contractsApi = {
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
-          params.append(key, value.toString());
+          // Converter enum para string se necessário
+          const stringValue =
+            typeof value === "number" ? value.toString() : String(value);
+          params.append(key, stringValue);
         }
       });
     }
@@ -53,9 +56,49 @@ export const contractsApi = {
       params.append("forceRefresh", "true");
     }
 
-    return apiClient.get<PaginatedResponse<Contract>>(
-      `/contracts?${params.toString()}`
-    );
+    try {
+      return await apiClient.get<PaginatedResponse<Contract>>(
+        `/contracts?${params.toString()}`
+      );
+    } catch (error: any) {
+      console.error("❌ Erro ao buscar contratos:", error);
+
+      // Se for erro 500, pode ser problema de migração no backend
+      if (error?.response?.status === 500) {
+        console.warn(
+          "⚠️ Erro 500 detectado - possivelmente migrações não aplicadas no backend"
+        );
+
+        // Retornar dados vazios para evitar crash da aplicação
+        return {
+          data: [],
+          totalItems: 0,
+          totalPages: 0,
+          currentPage: 1,
+          pageSize: 10,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        };
+      }
+
+      // Se for erro 401, pode ser problema de autenticação
+      if (error?.response?.status === 401) {
+        console.warn("⚠️ Erro 401 detectado - problema de autenticação");
+
+        // Retornar dados vazios para evitar crash da aplicação
+        return {
+          data: [],
+          totalItems: 0,
+          totalPages: 0,
+          currentPage: 1,
+          pageSize: 10,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        };
+      }
+
+      throw error;
+    }
   },
 
   /**
@@ -178,7 +221,7 @@ export const contractsApi = {
     if (!data.filial) {
       throw new Error("Filial é obrigatória");
     }
-    formData.append("filial", data.filial);
+    formData.append("filial", data.filial.toString());
 
     if (!data.categoriaContrato) {
       throw new Error("Categoria do contrato é obrigatória");
@@ -266,7 +309,7 @@ export const contractsApi = {
     formData.append("objeto", data.objeto || "");
     formData.append("dataContrato", data.dataContrato || "");
     formData.append("prazo", (data.prazo || 0).toString());
-    formData.append("filial", data.filial || "");
+    formData.append("filial", (data.filial || "").toString());
     formData.append("categoriaContrato", data.categoriaContrato || "");
 
     // Adicionar campos opcionais se existirem
@@ -362,8 +405,23 @@ export const contractsApi = {
         "/contracts/statistics"
       );
       return response;
-    } catch (error) {
-      console.error("Error fetching statistics:", error);
+    } catch (error: any) {
+      console.error("❌ Erro ao buscar statistics:", error);
+
+      // Se for erro 500, pode ser problema de migração no backend
+      if (error?.response?.status === 500) {
+        console.warn(
+          "⚠️ Erro 500 detectado nas statistics - possivelmente migrações não aplicadas no backend"
+        );
+      }
+
+      // Se for erro 401, pode ser problema de autenticação
+      if (error?.response?.status === 401) {
+        console.warn(
+          "⚠️ Erro 401 detectado nas statistics - problema de autenticação"
+        );
+      }
+
       // Return default values when there's an error or no data
       return {
         totalContracts: 0,
