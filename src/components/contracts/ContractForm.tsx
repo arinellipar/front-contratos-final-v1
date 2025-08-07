@@ -66,17 +66,14 @@ const contractSchema = z.object({
   observacoes: z.string().max(2000).optional(),
   filial: z.nativeEnum(Filial),
   categoriaContrato: z.nativeEnum(ContractCategory),
-  setorResponsavel: z
-    .string()
-    .min(1, "Setor responsável é obrigatório")
-    .max(200),
+  setorResponsavel: z.string().max(200).optional(),
   valorTotalContrato: z
     .string()
-    .min(1, "Valor total é obrigatório")
-    .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
+    .optional()
+    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) > 0), {
       message: "O valor total deve ser maior que zero",
     }),
-  tipoPagamento: z.nativeEnum(TipoPagamento),
+  tipoPagamento: z.nativeEnum(TipoPagamento).optional(),
   quantidadeParcelas: z
     .string()
     .optional()
@@ -85,8 +82,8 @@ const contractSchema = z.object({
         !val || (!isNaN(Number(val)) && Number(val) >= 1 && Number(val) <= 60),
       { message: "A quantidade de parcelas deve ser entre 1 e 60" }
     ),
-  formaPagamento: z.nativeEnum(FormaPagamento),
-  dataFinal: z.string().min(1, "Data final é obrigatória"),
+  formaPagamento: z.nativeEnum(FormaPagamento).optional(),
+  dataFinal: z.string().optional(),
 });
 
 type ContractFormData = {
@@ -102,12 +99,12 @@ type ContractFormData = {
   observacoes?: string;
   filial: Filial;
   categoriaContrato: ContractCategory;
-  setorResponsavel: string;
-  valorTotalContrato: string;
-  tipoPagamento: TipoPagamento;
+  setorResponsavel?: string;
+  valorTotalContrato?: string;
+  tipoPagamento?: TipoPagamento;
   quantidadeParcelas?: string;
-  formaPagamento: FormaPagamento;
-  dataFinal: string;
+  formaPagamento?: FormaPagamento;
+  dataFinal?: string;
   arquivoPdf?: File;
 };
 
@@ -250,24 +247,13 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
       toast.error("Categoria do contrato é obrigatória");
       return;
     }
-    if (!data.setorResponsavel?.trim()) {
-      toast.error("Setor responsável é obrigatório");
+    // Validações dos novos campos (opcionais para compatibilidade)
+    if (data.setorResponsavel && !data.setorResponsavel.trim()) {
+      toast.error("Setor responsável não pode estar vazio se preenchido");
       return;
     }
-    if (!valorTotalFormat.isValid || valorTotalFormat.rawValue <= 0) {
-      toast.error("Valor total é obrigatório e deve ser maior que zero");
-      return;
-    }
-    if (!data.tipoPagamento) {
-      toast.error("Tipo de pagamento é obrigatório");
-      return;
-    }
-    if (!data.formaPagamento) {
-      toast.error("Forma de pagamento é obrigatória");
-      return;
-    }
-    if (!data.dataFinal) {
-      toast.error("Data final é obrigatória");
+    if (valorTotalFormat.rawValue > 0 && !valorTotalFormat.isValid) {
+      toast.error("Valor total deve ser um valor válido");
       return;
     }
 
@@ -289,13 +275,17 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
       observacoes: data.observacoes?.trim(),
       filial: Number(data.filial) as Filial, // Garante que seja enviado como número
       categoriaContrato: String(data.categoriaContrato) as any, // Convert enum to string explicitly
-      setorResponsavel: data.setorResponsavel.trim(),
-      valorTotalContrato: valorTotalFormat.rawValue,
-      tipoPagamento: Number(data.tipoPagamento) as TipoPagamento, // Garante que seja enviado como número
+      setorResponsavel: data.setorResponsavel?.trim(),
+      valorTotalContrato: valorTotalFormat.rawValue || undefined,
+      tipoPagamento: data.tipoPagamento
+        ? (Number(data.tipoPagamento) as TipoPagamento)
+        : undefined,
       quantidadeParcelas: data.quantidadeParcelas
         ? Number(data.quantidadeParcelas)
         : undefined,
-      formaPagamento: Number(data.formaPagamento) as FormaPagamento, // Garante que seja enviado como número
+      formaPagamento: data.formaPagamento
+        ? (Number(data.formaPagamento) as FormaPagamento)
+        : undefined,
       dataFinal: data.dataFinal,
       arquivoPdf: selectedFile || undefined, // Garante que o arquivo vá para o backend
     };

@@ -115,12 +115,12 @@ export interface ContractCreateDto {
   observacoes?: string;
   filial: Filial;
   categoriaContrato: ContractCategory;
-  setorResponsavel: string;
-  valorTotalContrato: number;
-  tipoPagamento: TipoPagamento;
+  setorResponsavel?: string;
+  valorTotalContrato?: number;
+  tipoPagamento?: TipoPagamento;
   quantidadeParcelas?: number;
-  formaPagamento: FormaPagamento;
-  dataFinal: string;
+  formaPagamento?: FormaPagamento;
+  dataFinal?: string;
   arquivoPdf?: File;
 }
 

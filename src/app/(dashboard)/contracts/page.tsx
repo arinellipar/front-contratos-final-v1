@@ -122,15 +122,27 @@ export default function ContractsPage() {
     },
   });
 
-  // Log errors for debugging
+  // Log errors for debugging and handle auth errors
   useEffect(() => {
     if (error) {
       console.error("❌ Erro ao carregar contratos:", error);
+      // Se erro 401, redirecionar para login
+      if ((error as any)?.response?.status === 401) {
+        console.log("🔐 Redirecionando para login devido a erro 401");
+        router.push("/login");
+      }
     }
     if (statsError) {
       console.error("❌ Erro ao carregar statistics:", statsError);
+      // Se erro 401, redirecionar para login
+      if ((statsError as any)?.response?.status === 401) {
+        console.log(
+          "🔐 Redirecionando para login devido a erro 401 nas statistics"
+        );
+        router.push("/login");
+      }
     }
-  }, [error, statsError]);
+  }, [error, statsError, router]);
 
   // Mutation para deletar contrato
   const deleteMutation = useMutation({

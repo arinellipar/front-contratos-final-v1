@@ -199,40 +199,46 @@ export const contractsApi = {
       formData.append("observacoes", data.observacoes);
     }
 
-    // Adicionar novos campos obrigatórios
-    if (!data.setorResponsavel) {
-      throw new Error("Setor responsável é obrigatório");
-    }
-    formData.append("setorResponsavel", data.setorResponsavel);
+    // Adicionar novos campos (opcionais para compatibilidade com backend de produção)
+    try {
+      if (data.setorResponsavel) {
+        formData.append("setorResponsavel", data.setorResponsavel);
+      }
 
-    if (!data.valorTotalContrato || data.valorTotalContrato <= 0) {
-      throw new Error(
-        "Valor total do contrato é obrigatório e deve ser maior que zero"
+      if (data.valorTotalContrato && data.valorTotalContrato > 0) {
+        formData.append(
+          "valorTotalContrato",
+          data.valorTotalContrato.toString()
+        );
+      }
+
+      if (data.tipoPagamento !== undefined && data.tipoPagamento !== null) {
+        formData.append("tipoPagamento", data.tipoPagamento.toString());
+      }
+
+      if (data.formaPagamento !== undefined && data.formaPagamento !== null) {
+        formData.append("formaPagamento", data.formaPagamento.toString());
+      }
+
+      if (data.dataFinal) {
+        formData.append("dataFinal", data.dataFinal);
+      }
+
+      // Adicionar campo opcional de quantidade de parcelas
+      if (
+        data.quantidadeParcelas !== undefined &&
+        data.quantidadeParcelas !== null
+      ) {
+        formData.append(
+          "quantidadeParcelas",
+          data.quantidadeParcelas.toString()
+        );
+      }
+    } catch (error) {
+      console.warn(
+        "⚠️ Alguns campos novos podem não estar disponíveis no backend:",
+        error
       );
-    }
-    formData.append("valorTotalContrato", data.valorTotalContrato.toString());
-
-    if (data.tipoPagamento === undefined || data.tipoPagamento === null) {
-      throw new Error("Tipo de pagamento é obrigatório");
-    }
-    formData.append("tipoPagamento", data.tipoPagamento.toString());
-
-    if (data.formaPagamento === undefined || data.formaPagamento === null) {
-      throw new Error("Forma de pagamento é obrigatória");
-    }
-    formData.append("formaPagamento", data.formaPagamento.toString());
-
-    if (!data.dataFinal) {
-      throw new Error("Data final é obrigatória");
-    }
-    formData.append("dataFinal", data.dataFinal);
-
-    // Adicionar campo opcional de quantidade de parcelas
-    if (
-      data.quantidadeParcelas !== undefined &&
-      data.quantidadeParcelas !== null
-    ) {
-      formData.append("quantidadeParcelas", data.quantidadeParcelas.toString());
     }
 
     // Adicionar arquivo PDF se existir
@@ -277,22 +283,46 @@ export const contractsApi = {
       formData.append("observacoes", data.observacoes);
     }
 
-    // Adicionar novos campos obrigatórios
-    formData.append("setorResponsavel", data.setorResponsavel || "");
-    formData.append(
-      "valorTotalContrato",
-      (data.valorTotalContrato || 0).toString()
-    );
-    formData.append("tipoPagamento", (data.tipoPagamento || 0).toString());
-    formData.append("formaPagamento", (data.formaPagamento || 0).toString());
-    formData.append("dataFinal", data.dataFinal || "");
+    // Adicionar novos campos (opcionais para compatibilidade com backend de produção)
+    try {
+      if (data.setorResponsavel) {
+        formData.append("setorResponsavel", data.setorResponsavel);
+      }
 
-    // Adicionar campo opcional de quantidade de parcelas
-    if (
-      data.quantidadeParcelas !== undefined &&
-      data.quantidadeParcelas !== null
-    ) {
-      formData.append("quantidadeParcelas", data.quantidadeParcelas.toString());
+      if (data.valorTotalContrato && data.valorTotalContrato > 0) {
+        formData.append(
+          "valorTotalContrato",
+          data.valorTotalContrato.toString()
+        );
+      }
+
+      if (data.tipoPagamento !== undefined && data.tipoPagamento !== null) {
+        formData.append("tipoPagamento", data.tipoPagamento.toString());
+      }
+
+      if (data.formaPagamento !== undefined && data.formaPagamento !== null) {
+        formData.append("formaPagamento", data.formaPagamento.toString());
+      }
+
+      if (data.dataFinal) {
+        formData.append("dataFinal", data.dataFinal);
+      }
+
+      // Adicionar campo opcional de quantidade de parcelas
+      if (
+        data.quantidadeParcelas !== undefined &&
+        data.quantidadeParcelas !== null
+      ) {
+        formData.append(
+          "quantidadeParcelas",
+          data.quantidadeParcelas.toString()
+        );
+      }
+    } catch (error) {
+      console.warn(
+        "⚠️ Alguns campos novos podem não estar disponíveis no backend:",
+        error
+      );
     }
 
     // Adicionar arquivo PDF se existir
