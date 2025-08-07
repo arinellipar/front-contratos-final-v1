@@ -5,7 +5,12 @@ import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { contractsApi } from "@/lib/api/contracts";
-import { Contract, ContractFilters } from "@/lib/types/contract";
+import {
+  Contract,
+  ContractFilters,
+  Filial,
+  FilialDisplay,
+} from "@/lib/types/contract";
 import { useAuth } from "@/lib/auth/hooks";
 import { PageHeader } from "@/components/layout/Pageheader";
 import { ContractTable } from "@/components/contracts/ContractTable";
@@ -62,7 +67,7 @@ export default function ContractsPage() {
     dataInicio: undefined,
     dataFim: undefined,
     categoriaContrato: undefined,
-    filial: "",
+    filial: undefined,
   });
 
   // Estado da UI
@@ -243,7 +248,7 @@ export default function ContractsPage() {
           ? formatCurrency(contract.multa)
           : "N/A",
         Categoria: contract.categoriaContrato,
-        Filial: contract.filial,
+        Filial: FilialDisplay[contract.filial]?.label || contract.filial,
         Status: contract.status === 1 ? "Ativo" : "Inativo",
       }));
 

@@ -3,7 +3,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Contract } from "@/lib/types/contract";
+import { Contract, FilialDisplay } from "@/lib/types/contract";
 import { Button } from "@/components/ui/Button";
 import { formatDate } from "@/lib/utils/formatters";
 import { contractsApi } from "@/lib/api/contracts";
@@ -281,7 +281,7 @@ export function ContractTable({
                     </span>
                   </td>
                   <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
-                    {contract.filial}
+                    {FilialDisplay[contract.filial]?.label || contract.filial}
                   </td>
                   <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
                     {contract.valorTotalContrato
@@ -490,7 +490,9 @@ export function ContractTable({
                     <span className="text-xs font-medium text-gray-500">
                       Filial:
                     </span>
-                    <p className="text-gray-900">{contract.filial}</p>
+                    <p className="text-gray-900">
+                      {FilialDisplay[contract.filial]?.label || contract.filial}
+                    </p>
                   </div>
                   <div>
                     <span className="text-xs font-medium text-gray-500">
