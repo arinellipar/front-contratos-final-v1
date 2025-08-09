@@ -44,58 +44,18 @@ export const contractsApi = {
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
-          // Converter enum para string se necessário
-          const stringValue =
-            typeof value === "number" ? value.toString() : String(value);
-          params.append(key, stringValue);
+          params.append(key, value.toString());
         }
       });
-    }
-
-    // Garantir parâmetros de paginação padrão
-    if (!params.get("page")) {
-      params.set("page", String(filters?.page ?? 1));
-    }
-    if (!params.get("pageSize")) {
-      params.set("pageSize", String(filters?.pageSize ?? 10));
     }
 
     if (forceRefresh) {
       params.append("forceRefresh", "true");
     }
 
-    try {
-      return await apiClient.get<PaginatedResponse<Contract>>(
-        `/contracts?${params.toString()}`
-      );
-    } catch (error: any) {
-      console.error("❌ Erro ao buscar contratos:", error);
-
-      const empty: PaginatedResponse<Contract> = {
-        data: [],
-        totalItems: 0,
-        totalPages: 0,
-        currentPage: Number(filters?.page ?? 1),
-        pageSize: Number(filters?.pageSize ?? 10),
-        hasNextPage: false,
-        hasPreviousPage: false,
-      };
-
-      // 401: retornar lista vazia (app vai redirecionar por conta própria)
-      if (error?.response?.status === 401) {
-        console.warn("⚠️ Erro 401 detectado - problema de autenticação");
-        return empty;
-      }
-
-      // 404/500: retornar vazio para não quebrar UI; logs já foram emitidos
-      if (error?.response?.status === 404 || error?.response?.status === 500) {
-        console.warn("⚠️ Endpoint indisponível ou migrações pendentes");
-        return empty;
-      }
-
-      // Fallback: não mascarar outros erros desconhecidos
-      throw error;
-    }
+    return apiClient.get<PaginatedResponse<Contract>>(
+      `/contracts?${params.toString()}`
+    );
   },
 
   /**
@@ -218,7 +178,7 @@ export const contractsApi = {
     if (!data.filial) {
       throw new Error("Filial é obrigatória");
     }
-    formData.append("filial", data.filial.toString());
+    formData.append("filial", data.filial);
 
     if (!data.categoriaContrato) {
       throw new Error("Categoria do contrato é obrigatória");
@@ -237,48 +197,6 @@ export const contractsApi = {
     }
     if (data.observacoes) {
       formData.append("observacoes", data.observacoes);
-    }
-
-    // Adicionar novos campos (opcionais para compatibilidade com backend de produção)
-    try {
-      if (data.setorResponsavel) {
-        formData.append("setorResponsavel", data.setorResponsavel);
-      }
-
-      if (data.valorTotalContrato && data.valorTotalContrato > 0) {
-        formData.append(
-          "valorTotalContrato",
-          data.valorTotalContrato.toString()
-        );
-      }
-
-      if (data.tipoPagamento !== undefined && data.tipoPagamento !== null) {
-        formData.append("tipoPagamento", data.tipoPagamento.toString());
-      }
-
-      if (data.formaPagamento !== undefined && data.formaPagamento !== null) {
-        formData.append("formaPagamento", data.formaPagamento.toString());
-      }
-
-      if (data.dataFinal) {
-        formData.append("dataFinal", data.dataFinal);
-      }
-
-      // Adicionar campo opcional de quantidade de parcelas
-      if (
-        data.quantidadeParcelas !== undefined &&
-        data.quantidadeParcelas !== null
-      ) {
-        formData.append(
-          "quantidadeParcelas",
-          data.quantidadeParcelas.toString()
-        );
-      }
-    } catch (error) {
-      console.warn(
-        "⚠️ Alguns campos novos podem não estar disponíveis no backend:",
-        error
-      );
     }
 
     // Adicionar arquivo PDF se existir
@@ -306,7 +224,7 @@ export const contractsApi = {
     formData.append("objeto", data.objeto || "");
     formData.append("dataContrato", data.dataContrato || "");
     formData.append("prazo", (data.prazo || 0).toString());
-    formData.append("filial", (data.filial || "").toString());
+    formData.append("filial", data.filial || "");
     formData.append("categoriaContrato", data.categoriaContrato || "");
 
     // Adicionar campos opcionais se existirem
@@ -321,48 +239,6 @@ export const contractsApi = {
     }
     if (data.observacoes) {
       formData.append("observacoes", data.observacoes);
-    }
-
-    // Adicionar novos campos (opcionais para compatibilidade com backend de produção)
-    try {
-      if (data.setorResponsavel) {
-        formData.append("setorResponsavel", data.setorResponsavel);
-      }
-
-      if (data.valorTotalContrato && data.valorTotalContrato > 0) {
-        formData.append(
-          "valorTotalContrato",
-          data.valorTotalContrato.toString()
-        );
-      }
-
-      if (data.tipoPagamento !== undefined && data.tipoPagamento !== null) {
-        formData.append("tipoPagamento", data.tipoPagamento.toString());
-      }
-
-      if (data.formaPagamento !== undefined && data.formaPagamento !== null) {
-        formData.append("formaPagamento", data.formaPagamento.toString());
-      }
-
-      if (data.dataFinal) {
-        formData.append("dataFinal", data.dataFinal);
-      }
-
-      // Adicionar campo opcional de quantidade de parcelas
-      if (
-        data.quantidadeParcelas !== undefined &&
-        data.quantidadeParcelas !== null
-      ) {
-        formData.append(
-          "quantidadeParcelas",
-          data.quantidadeParcelas.toString()
-        );
-      }
-    } catch (error) {
-      console.warn(
-        "⚠️ Alguns campos novos podem não estar disponíveis no backend:",
-        error
-      );
     }
 
     // Adicionar arquivo PDF se existir
@@ -402,23 +278,8 @@ export const contractsApi = {
         "/contracts/statistics"
       );
       return response;
-    } catch (error: any) {
-      console.error("❌ Erro ao buscar statistics:", error);
-
-      // Se for erro 500, pode ser problema de migração no backend
-      if (error?.response?.status === 500) {
-        console.warn(
-          "⚠️ Erro 500 detectado nas statistics - possivelmente migrações não aplicadas no backend"
-        );
-      }
-
-      // Se for erro 401, pode ser problema de autenticação
-      if (error?.response?.status === 401) {
-        console.warn(
-          "⚠️ Erro 401 detectado nas statistics - problema de autenticação"
-        );
-      }
-
+    } catch (error) {
+      console.error("Error fetching statistics:", error);
       // Return default values when there's an error or no data
       return {
         totalContracts: 0,

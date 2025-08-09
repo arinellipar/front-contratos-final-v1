@@ -1,22 +1,12 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useCurrencyFormat } from "@/hooks/useNumberFormat";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { contractsApi } from "@/lib/api/contracts";
-import {
-  ContractCategory,
-  ContractCreateDto,
-  TipoPagamento,
-  FormaPagamento,
-  Filial,
-  TipoPagamentoDisplay,
-  FormaPagamentoDisplay,
-  FilialDisplay,
-} from "@/lib/types/contract";
+import { ContractCategory, ContractCreateDto } from "@/lib/types/contract";
 import { Button } from "@/components/ui/Button";
 import { FileUp, Save, X } from "lucide-react";
 import { SubmitHandler } from "react-hook-form";
@@ -64,26 +54,8 @@ const contractSchema = z.object({
       }
     ),
   observacoes: z.string().max(2000).optional(),
-  filial: z.nativeEnum(Filial),
+  filial: z.string().min(1, "Filial é obrigatória").max(200),
   categoriaContrato: z.nativeEnum(ContractCategory),
-  setorResponsavel: z.string().max(200).optional(),
-  valorTotalContrato: z
-    .string()
-    .optional()
-    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) > 0), {
-      message: "O valor total deve ser maior que zero",
-    }),
-  tipoPagamento: z.nativeEnum(TipoPagamento).optional(),
-  quantidadeParcelas: z
-    .string()
-    .optional()
-    .refine(
-      (val) =>
-        !val || (!isNaN(Number(val)) && Number(val) >= 1 && Number(val) <= 60),
-      { message: "A quantidade de parcelas deve ser entre 1 e 60" }
-    ),
-  formaPagamento: z.nativeEnum(FormaPagamento).optional(),
-  dataFinal: z.string().optional(),
 });
 
 type ContractFormData = {
@@ -97,14 +69,8 @@ type ContractFormData = {
   multa?: string;
   avisoPrevia?: string;
   observacoes?: string;
-  filial: Filial;
+  filial: string;
   categoriaContrato: ContractCategory;
-  setorResponsavel?: string;
-  valorTotalContrato?: string;
-  tipoPagamento?: TipoPagamento;
-  quantidadeParcelas?: string;
-  formaPagamento?: FormaPagamento;
-  dataFinal?: string;
   arquivoPdf?: File;
 };
 
@@ -117,51 +83,20 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedParcelas, setSelectedParcelas] = useState<number>(1);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    watch,
-    setValue,
   } = useForm<ContractFormData>({
     resolver: zodResolver(contractSchema),
     defaultValues: {
       prazo: "30",
       dataContrato: new Date().toISOString().split("T")[0],
       categoriaContrato: ContractCategory.Outros,
-      filial: Filial.RioDeJaneiro,
-      tipoPagamento: TipoPagamento.AVista,
-      formaPagamento: FormaPagamento.Pix,
-      dataFinal: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0], // 1 ano à frente
       ...initialData,
     },
   });
-
-  // Hook para formatação de moeda
-  const valorTotalFormat = useCurrencyFormat(
-    initialData?.valorTotalContrato ? Number(initialData.valorTotalContrato) : 0
-  );
-
-  // Watch para tipo de pagamento e valor total
-  const watchTipoPagamento = watch("tipoPagamento");
-  const watchValorTotal = valorTotalFormat.rawValue;
-
-  // Calcular valor da parcela
-  const valorParcela =
-    valorTotalFormat.rawValue && selectedParcelas > 0
-      ? valorTotalFormat.rawValue / selectedParcelas
-      : 0;
-
-  // Sincronizar valor formatado com o formulário
-  useEffect(() => {
-    if (valorTotalFormat.rawValue > 0) {
-      setValue("valorTotalContrato", valorTotalFormat.rawValue.toString());
-    }
-  }, [valorTotalFormat.rawValue, setValue]);
 
   const createMutation = useMutation({
     mutationFn: contractsApi.create,
@@ -239,21 +174,12 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
       toast.error("Prazo é obrigatório e deve ser maior que zero");
       return;
     }
-    if (!data.filial) {
+    if (!data.filial?.trim()) {
       toast.error("Filial é obrigatória");
       return;
     }
     if (!data.categoriaContrato) {
       toast.error("Categoria do contrato é obrigatória");
-      return;
-    }
-    // Validações dos novos campos (opcionais para compatibilidade)
-    if (data.setorResponsavel && !data.setorResponsavel.trim()) {
-      toast.error("Setor responsável não pode estar vazio se preenchido");
-      return;
-    }
-    if (valorTotalFormat.rawValue > 0 && !valorTotalFormat.isValid) {
-      toast.error("Valor total deve ser um valor válido");
       return;
     }
 
@@ -273,22 +199,34 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
       multa: data.multa ? Number(data.multa) : undefined,
       avisoPrevia: data.avisoPrevia ? Number(data.avisoPrevia) : undefined,
       observacoes: data.observacoes?.trim(),
-      filial: Number(data.filial) as Filial, // Garante que seja enviado como número
+      filial: data.filial.trim(),
       categoriaContrato: String(data.categoriaContrato) as any, // Convert enum to string explicitly
-      setorResponsavel: data.setorResponsavel?.trim(),
-      valorTotalContrato: valorTotalFormat.rawValue || undefined,
-      tipoPagamento: data.tipoPagamento
-        ? (Number(data.tipoPagamento) as TipoPagamento)
-        : undefined,
-      quantidadeParcelas: data.quantidadeParcelas
-        ? Number(data.quantidadeParcelas)
-        : undefined,
-      formaPagamento: data.formaPagamento
-        ? (Number(data.formaPagamento) as FormaPagamento)
-        : undefined,
-      dataFinal: data.dataFinal,
       arquivoPdf: selectedFile || undefined, // Garante que o arquivo vá para o backend
     };
+
+    console.log("🔍 Submit data after processing:", submitData);
+    console.log("📋 Validação dos dados:");
+    console.log(
+      `  - Contrato: "${submitData.contrato}" (${submitData.contrato.length} chars)`
+    );
+    console.log(
+      `  - Contratante: "${submitData.contratante}" (${submitData.contratante.length} chars)`
+    );
+    console.log(
+      `  - Contratada: "${submitData.contratada}" (${submitData.contratada.length} chars)`
+    );
+    console.log(
+      `  - Objeto: "${submitData.objeto}" (${submitData.objeto.length} chars)`
+    );
+    console.log(`  - DataContrato: "${submitData.dataContrato}"`);
+    console.log(`  - Prazo: ${submitData.prazo}`);
+    console.log(
+      `  - Filial: "${submitData.filial}" (${submitData.filial.length} chars)`
+    );
+    console.log(`  - CategoriaContrato: "${submitData.categoriaContrato}"`);
+    console.log(
+      `  - ArquivoPdf: ${submitData.arquivoPdf ? `File(${submitData.arquivoPdf.name})` : "undefined"}`
+    );
 
     if (selectedFile) {
       console.log("Enviando como FormData (com arquivo PDF)");
@@ -345,7 +283,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
           {...register("contrato")}
           rows={4}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="Digite o nome do contrato..."
+          placeholder="Digite o texto completo do contrato..."
         />
         {errors.contrato && (
           <p className="text-sm text-red-600">{errors.contrato.message}</p>
@@ -524,16 +462,12 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
           >
             Filial <span className="text-red-500">*</span>
           </label>
-          <select
+          <input
             {...register("filial")}
+            type="text"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {Object.entries(FilialDisplay).map(([key, value]) => (
-              <option key={key} value={key}>
-                {value.icon} {value.label}
-              </option>
-            ))}
-          </select>
+            placeholder="Nome da filial responsável"
+          />
           {errors.filial && (
             <p className="text-sm text-red-600">{errors.filial.message}</p>
           )}
@@ -553,9 +487,6 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
             <option value={ContractCategory.Software}>💻 Software</option>
             <option value={ContractCategory.Aluguel}>🏢 Aluguel</option>
             <option value={ContractCategory.TI}>⚙️ TI</option>
-            <option value={ContractCategory.ContasConsumo}>
-              🧾 Contas de Consumo
-            </option>
             <option value={ContractCategory.Outros}>📁 Outros</option>
           </select>
           {errors.categoriaContrato && (
@@ -564,254 +495,6 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
             </p>
           )}
         </div>
-      </div>
-
-      {/* Setor Responsável and Valor Total */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label
-            htmlFor="setorResponsavel"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Setor Responsável <span className="text-red-500">*</span>
-          </label>
-          <input
-            {...register("setorResponsavel")}
-            type="text"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Ex: TI, Jurídico, Financeiro"
-          />
-          {errors.setorResponsavel && (
-            <p className="text-sm text-red-600">
-              {errors.setorResponsavel.message}
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <label
-            htmlFor="valorTotalContrato"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Valor Total do Contrato (R$) <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={valorTotalFormat.formattedValue}
-            onChange={(e) => valorTotalFormat.handleChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Ex: 60.000,00 ou 60,000.00"
-          />
-          {valorTotalFormat.error && (
-            <p className="text-sm text-red-600">{valorTotalFormat.error}</p>
-          )}
-          {errors.valorTotalContrato && (
-            <p className="text-sm text-red-600">
-              {errors.valorTotalContrato.message}
-            </p>
-          )}
-          {valorTotalFormat.rawValue > 0 && (
-            <p className="text-sm text-green-600">
-              Valor: R${" "}
-              {valorTotalFormat.rawValue.toLocaleString("pt-BR", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Data Final */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label
-            htmlFor="dataFinal"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Data Final do Contrato <span className="text-red-500">*</span>
-          </label>
-          <input
-            {...register("dataFinal")}
-            type="date"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          {errors.dataFinal && (
-            <p className="text-sm text-red-600">{errors.dataFinal.message}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Payment Information */}
-      <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-        <h3 className="text-lg font-medium text-gray-900">
-          Informações de Pagamento
-        </h3>
-
-        {/* Tipo de Pagamento and Forma de Pagamento */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label
-              htmlFor="tipoPagamento"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Tipo de Pagamento <span className="text-red-500">*</span>
-            </label>
-            <select
-              {...register("tipoPagamento")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              {Object.entries(TipoPagamentoDisplay).map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value.icon} {value.label}
-                </option>
-              ))}
-            </select>
-            {errors.tipoPagamento && (
-              <p className="text-sm text-red-600">
-                {errors.tipoPagamento.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label
-              htmlFor="formaPagamento"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Forma de Pagamento <span className="text-red-500">*</span>
-            </label>
-            <select
-              {...register("formaPagamento")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              {Object.entries(FormaPagamentoDisplay).map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value.icon} {value.label}
-                </option>
-              ))}
-            </select>
-            {errors.formaPagamento && (
-              <p className="text-sm text-red-600">
-                {errors.formaPagamento.message}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Quantidade de Parcelas - Only show if parcelado is selected */}
-        {(Number(watchTipoPagamento) === 2 ||
-          watchTipoPagamento === TipoPagamento.Parcelado) && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Selecione a Quantidade de Parcelas{" "}
-                <span className="text-red-500">*</span>
-              </label>
-
-              {/* Grid de opções de parcelas */}
-              <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2 mb-4 max-h-80 overflow-y-auto">
-                {Array.from({ length: 60 }, (_, i) => i + 1).map((parcela) => {
-                  const valorParcelaAtual = valorTotalFormat.rawValue
-                    ? valorTotalFormat.rawValue / parcela
-                    : 0;
-                  const isSelected = selectedParcelas === parcela;
-
-                  return (
-                    <button
-                      key={parcela}
-                      type="button"
-                      onClick={() => {
-                        setSelectedParcelas(parcela);
-                        // Atualizar o valor no formulário
-                        setValue("quantidadeParcelas", parcela.toString());
-                      }}
-                      className={`
-                        p-2 text-xs border rounded-lg transition-all hover:scale-105
-                        ${
-                          isSelected
-                            ? "bg-blue-500 text-white border-blue-500 shadow-md"
-                            : "bg-white text-gray-700 border-gray-300 hover:border-blue-300"
-                        }
-                      `}
-                    >
-                      <div className="font-semibold">{parcela}x</div>
-                      {valorTotalFormat.rawValue > 0 && (
-                        <div className="text-[10px] mt-1">
-                          R${" "}
-                          {valorParcelaAtual.toLocaleString("pt-BR", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Input hidden para o react-hook-form */}
-              <input {...register("quantidadeParcelas")} type="hidden" />
-
-              {/* Calculadora de Parcelas */}
-              {valorTotalFormat.rawValue > 0 && (
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <h4 className="text-sm font-semibold text-blue-900 mb-3">
-                    💰 Calculadora de Parcelas
-                  </h4>
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-gray-800">
-                      Valor Total: R${" "}
-                      {valorTotalFormat.rawValue.toLocaleString("pt-BR", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Selecione abaixo quantas parcelas deseja
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Resumo da parcela selecionada */}
-              {valorTotalFormat.rawValue > 0 && selectedParcelas > 0 && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-green-900">
-                        ✅ Parcelamento: {selectedParcelas}x
-                      </p>
-                      <p className="text-xs text-green-700">
-                        Valor total: R${" "}
-                        {valorTotalFormat.rawValue.toLocaleString("pt-BR", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-green-900">
-                        R${" "}
-                        {valorParcela.toLocaleString("pt-BR", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </p>
-                      <p className="text-xs text-green-700">por parcela</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {errors.quantidadeParcelas && (
-                <p className="text-sm text-red-600 mt-2">
-                  {errors.quantidadeParcelas.message}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Observações */}

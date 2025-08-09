@@ -7,7 +7,6 @@ interface TestResults {
     NEXT_PUBLIC_API_URL: string;
     NODE_ENV: string;
     NEXTAUTH_URL: string;
-    BACKEND_API_URL?: string;
   };
   apiConnectivity: {
     status: number;
@@ -49,7 +48,6 @@ export default function ConnectionTest() {
         NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "NOT SET",
         NODE_ENV: "production",
         NEXTAUTH_URL: process.env.NEXTAUTH_URL || "NOT SET",
-        BACKEND_API_URL: process.env.BACKEND_API_URL || "NOT SET",
       },
       apiConnectivity: { status: 0, statusText: "", success: false, url: "" },
       apiResponse: null,
@@ -59,7 +57,9 @@ export default function ConnectionTest() {
 
     try {
       // Test basic connectivity
-      const response = await fetch(`/api/proxy/health`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "https://fradema-backend-api.azurewebsites.net/api/v1"}/health`
+      );
       results.apiConnectivity = {
         status: response.status,
         statusText: response.statusText,
@@ -77,9 +77,16 @@ export default function ConnectionTest() {
 
       // Test CORS
       try {
-        const corsResponse = await fetch(`/api/proxy/health`, {
-          method: "OPTIONS",
-        });
+        const corsResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || "https://fradema-backend-api.azurewebsites.net/api/v1"}/health`,
+          {
+            method: "OPTIONS",
+            headers: {
+              Origin: window.location.origin,
+              "Access-Control-Request-Method": "GET",
+            },
+          }
+        );
         results.cors = {
           status: corsResponse.status,
           statusText: corsResponse.statusText,
@@ -95,12 +102,15 @@ export default function ConnectionTest() {
 
       // Test DELETE endpoint specifically
       try {
-        const deleteResponse = await fetch(`/api/proxy/contracts/999`, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+        const deleteResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || "https://fradema-backend-api.azurewebsites.net/api/v1"}/contracts/999`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
         results.deleteTest = {
           status: deleteResponse.status,
           statusText: deleteResponse.statusText,
@@ -122,6 +132,7 @@ export default function ConnectionTest() {
         origin: window.location.origin,
         href: window.location.href,
       };
+
     } catch (error: any) {
       results.error = {
         message: error.message,
@@ -205,8 +216,7 @@ export default function ConnectionTest() {
               <div
                 className={`p-3 rounded ${testResults.deleteTest?.success ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
               >
-                DELETE:{" "}
-                {testResults.deleteTest?.success ? "✅ Success" : "❌ Failed"}
+                DELETE: {testResults.deleteTest?.success ? "✅ Success" : "❌ Failed"}
               </div>
               <pre className="bg-gray-800 text-green-400 p-3 rounded text-sm overflow-x-auto mt-2">
                 {JSON.stringify(testResults.deleteTest, null, 2)}

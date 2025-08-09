@@ -1,3 +1,0 @@
-<step title="LogStreamManager: Dispose() called" date="2025-08-07T22:19:05.650" instance="79c9d7" >
-  <step title="Cleanup Xml Logs" date="2025-08-07T22:19:05.655" /><!-- duration: 22ms -->
-</step><!-- duration: 30ms -->

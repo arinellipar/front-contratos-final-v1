@@ -5,12 +5,7 @@ import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { contractsApi } from "@/lib/api/contracts";
-import {
-  Contract,
-  ContractFilters,
-  Filial,
-  FilialDisplay,
-} from "@/lib/types/contract";
+import { Contract, ContractFilters } from "@/lib/types/contract";
 import { useAuth } from "@/lib/auth/hooks";
 import { PageHeader } from "@/components/layout/Pageheader";
 import { ContractTable } from "@/components/contracts/ContractTable";
@@ -53,7 +48,6 @@ import {
 import { formatCurrency } from "@/lib/utils/formatters";
 import toast from "react-hot-toast";
 import { saveAs } from "file-saver";
-import { MaintenanceBanner } from "@/components/ui/MaintenanceBanner";
 
 export default function ContractsPage() {
   const router = useRouter();
@@ -68,7 +62,7 @@ export default function ContractsPage() {
     dataInicio: undefined,
     dataFim: undefined,
     categoriaContrato: undefined,
-    filial: undefined,
+    filial: "",
   });
 
   // Estado da UI
@@ -92,114 +86,19 @@ export default function ContractsPage() {
     queryFn: () => contractsApi.getAll(filters, true),
     staleTime: 0, // Sempre considera stale para forçar refetch
     gcTime: 2 * 60 * 1000, // 2 minutos
-    refetchOnWindowFocus: (query) => {
-      // Não refetch no foco se há erro 500 ou 401
-      if (query.state?.error) {
-        const status = (query.state.error as any)?.response?.status;
-        if (status === 500 || status === 401) {
-          return false;
-        }
-      }
-      return true;
-    },
-    refetchInterval: (query) => {
-      // Não fazer refetch automático se há erro 500 ou 401
-      if (query.state?.error) {
-        const status = (query.state.error as any)?.response?.status;
-        if (status === 500 || status === 401) {
-          console.warn(
-            "⚠️ Refetch automático desabilitado devido a erro",
-            status
-          );
-          return false;
-        }
-      }
-      return 30000; // 30 segundos normalmente
-    },
-    retry: (failureCount, error: any) => {
-      const status = error?.response?.status;
-
-      // Não tentar novamente se for erro 401 (não autorizado)
-      if (status === 401) {
-        console.error("❌ Erro de autenticação detectado:", error);
-        router.push("/login");
-        return false;
-      }
-
-      // Não tentar novamente se for erro 500 (servidor)
-      if (status === 500) {
-        console.error("❌ Erro 500 detectado - parando tentativas:", error);
-        return false;
-      }
-
-      return failureCount < 3;
-    },
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000, // Refetch a cada 30 segundos
+    retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   // Query para estatísticas rápidas
-  const { data: stats, error: statsError } = useQuery({
+  const { data: stats } = useQuery({
     queryKey: ["contracts-stats"],
     queryFn: () => contractsApi.getStatistics(),
     staleTime: 30000,
-    refetchInterval: (query) => {
-      // Não fazer refetch automático se há erro 500 ou 401
-      if (query.state?.error) {
-        const status = (query.state.error as any)?.response?.status;
-        if (status === 500 || status === 401) {
-          console.warn(
-            "⚠️ Refetch automático de statistics desabilitado devido a erro",
-            status
-          );
-          return false;
-        }
-      }
-      return 60000; // 60 segundos normalmente
-    },
-    retry: (failureCount, error: any) => {
-      const status = error?.response?.status;
-
-      // Não tentar novamente se for erro 401 (não autorizado)
-      if (status === 401) {
-        console.error("❌ Erro de autenticação nas statistics:", error);
-        router.push("/login");
-        return false;
-      }
-
-      // Não tentar novamente se for erro 500 (servidor)
-      if (status === 500) {
-        console.error(
-          "❌ Erro 500 nas statistics detectado - parando tentativas:",
-          error
-        );
-        return false;
-      }
-
-      return failureCount < 3;
-    },
+    refetchInterval: 60000,
   });
-
-  // Log errors for debugging and handle auth errors
-  useEffect(() => {
-    if (error) {
-      console.error("❌ Erro ao carregar contratos:", error);
-      // Se erro 401, redirecionar para login
-      if ((error as any)?.response?.status === 401) {
-        console.log("🔐 Redirecionando para login devido a erro 401");
-        router.push("/login");
-      }
-    }
-    if (statsError) {
-      console.error("❌ Erro ao carregar statistics:", statsError);
-      // Se erro 401, redirecionar para login
-      if ((statsError as any)?.response?.status === 401) {
-        console.log(
-          "🔐 Redirecionando para login devido a erro 401 nas statistics"
-        );
-        router.push("/login");
-      }
-    }
-  }, [error, statsError, router]);
 
   // Mutation para deletar contrato
   const deleteMutation = useMutation({
@@ -226,16 +125,16 @@ export default function ContractsPage() {
   });
 
   // Dados dos contratos
-  const contracts = (contractsResponse as any)?.data || [];
-  const totalPages = (contractsResponse as any)?.totalPages || 1;
-  const totalItems = (contractsResponse as any)?.totalItems || 0;
+  const contracts = contractsResponse?.data || [];
+  const totalPages = contractsResponse?.totalPages || 1;
+  const totalItems = contractsResponse?.totalItems || 0;
 
   // Log para verificar ordenação
   useEffect(() => {
     if (contracts.length > 0) {
       console.log(
         "📅 Contratos ordenados por data:",
-        contracts.map((c: Contract) => ({
+        contracts.map((c) => ({
           id: c.id,
           contrato: c.contrato,
           dataContrato: c.dataContrato,
@@ -247,15 +146,15 @@ export default function ContractsPage() {
 
   // Estatísticas calculadas
   const quickStats = useMemo(() => {
-    const totalValue = contracts.reduce((sum: number, contract: Contract) => {
-      return sum + (contract.valorTotalContrato || 0);
+    const totalValue = contracts.reduce((sum, contract) => {
+      return sum + (contract.multa || 0);
     }, 0);
 
     const activeContracts = contracts.filter(
-      (contract: Contract) => contract.status === 1
+      (contract) => contract.status === 1
     ).length;
 
-    const expiringContracts = contracts.filter((contract: Contract) => {
+    const expiringContracts = contracts.filter((contract) => {
       const expiryDate = new Date(contract.dataContrato);
       expiryDate.setDate(expiryDate.getDate() + (contract.prazo || 365));
       const daysUntilExpiry = Math.ceil(
@@ -340,11 +239,11 @@ export default function ContractsPage() {
           "pt-BR"
         ),
         "Prazo (dias)": contract.prazo,
-        "Valor Total": contract.valorTotalContrato
-          ? formatCurrency(contract.valorTotalContrato)
+        "Valor da Multa": contract.multa
+          ? formatCurrency(contract.multa)
           : "N/A",
         Categoria: contract.categoriaContrato,
-        Filial: FilialDisplay[contract.filial]?.label || contract.filial,
+        Filial: contract.filial,
         Status: contract.status === 1 ? "Ativo" : "Inativo",
       }));
 
@@ -376,24 +275,55 @@ export default function ContractsPage() {
     queryClient.invalidateQueries({ queryKey: ["contracts-stats"] });
   }, [refetch, queryClient]);
 
-  // Renderização com banner de manutenção para erros
-  const showMaintenanceBanner =
-    error &&
-    ((error as any)?.response?.status === 500 ||
-      (error as any)?.response?.status === 401 ||
-      (error as any)?.response?.status === 404);
+  // Renderização de erro
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Contratos"
+          description="Gerencie todos os contratos da empresa"
+          actions={
+            <Button onClick={handleRefresh} disabled={isRefetching}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Tentar Novamente
+            </Button>
+          }
+        />
+
+        <Card>
+          <CardContent className="p-8">
+            <div className="text-center">
+              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Erro ao carregar contratos
+              </h3>
+              <p className="text-gray-600 mb-4">
+                {(error as any)?.message ||
+                  "Ocorreu um erro ao carregar a lista de contratos."}
+              </p>
+              {(error as any)?.response?.data && (
+                <details className="text-left mb-4">
+                  <summary className="cursor-pointer text-sm text-gray-500">
+                    Detalhes do erro
+                  </summary>
+                  <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto">
+                    {JSON.stringify((error as any).response.data, null, 2)}
+                  </pre>
+                </details>
+              )}
+              <Button onClick={handleRefresh} disabled={isRefetching}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Tentar Novamente
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Banner de manutenção para erros conhecidos */}
-      {showMaintenanceBanner && (
-        <MaintenanceBanner
-          error={error}
-          onRetry={handleRefresh}
-          isRetrying={isRefetching}
-        />
-      )}
-
       {/* Cabeçalho da página */}
       <PageHeader
         title="Contratos"
@@ -505,7 +435,7 @@ export default function ContractsPage() {
                 formatCurrency(quickStats.totalValue)
               )}
             </div>
-            <p className="text-sm text-gray-600">Valor total dos contratos</p>
+            <p className="text-sm text-gray-600">Soma das multas</p>
           </CardContent>
         </Card>
       </div>

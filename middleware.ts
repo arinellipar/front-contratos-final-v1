@@ -8,12 +8,7 @@ const bypassAuth = process.env.BYPASS_AUTH === "true";
 
 // Middleware simplificado para desenvolvimento
 export default withAuth(
-  function middleware(req) {
-    // Permitir rotas do proxy sem autenticação
-    if (req.nextUrl.pathname.startsWith("/api/proxy")) {
-      return NextResponse.next();
-    }
-
+  function middleware() {
     // Se estiver em modo de bypass, permite acesso livre
     if (bypassAuth) {
       console.log("🔓 Bypass auth enabled - allowing free access");
@@ -26,11 +21,6 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // Permitir rotas do proxy sem autenticação
-        if (req.nextUrl.pathname.startsWith("/api/proxy")) {
-          return true;
-        }
-
         // Se estiver em modo de bypass, sempre autoriza
         if (bypassAuth) {
           return true;
@@ -47,13 +37,12 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    // Apenas páginas específicas que precisam de autenticação
     "/dashboard/:path*",
     "/admin/:path*",
     "/manager/:path*",
     "/profile/:path*",
-    "/contracts/:path*",
-    "/users/:path*",
-    "/files/:path*",
+    "/api/contracts/:path*",
+    "/api/users/:path*",
+    "/api/files/:path*",
   ],
 };

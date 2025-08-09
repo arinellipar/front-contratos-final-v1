@@ -4,8 +4,6 @@ import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   ContractCategory,
   ContractFilters as IContractFilters,
-  Filial,
-  FilialDisplay,
 } from "@/lib/types/contract";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/input";
@@ -154,7 +152,7 @@ export function ContractFilters({
       dataInicio: undefined,
       dataFim: undefined,
       categoriaContrato: undefined,
-      filial: undefined,
+      filial: "",
       page: 1,
     };
 
@@ -225,8 +223,8 @@ export function ContractFilters({
     if (localFilters.filial) {
       activeFilters.push({
         key: "filial",
-        label: `Filial: ${FilialDisplay[localFilters.filial]?.label || localFilters.filial}`,
-        remove: () => updateFilter({ filial: undefined }),
+        label: `Filial: ${localFilters.filial}`,
+        remove: () => updateFilter({ filial: "" }),
       });
     }
 
@@ -362,26 +360,12 @@ export function ContractFilters({
                   <Building className="w-4 h-4" />
                   Filial
                 </Label>
-                <Select
-                  value={localFilters.filial?.toString() || ""}
-                  onValueChange={(value) =>
-                    updateFilter({
-                      filial: value ? (Number(value) as Filial) : undefined,
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma filial..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Todas as filiais</SelectItem>
-                    {Object.entries(FilialDisplay).map(([key, value]) => (
-                      <SelectItem key={key} value={key}>
-                        {value.icon} {value.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input
+                  type="text"
+                  value={localFilters.filial || ""}
+                  onChange={(e) => updateFilter({ filial: e.target.value })}
+                  placeholder="Nome da filial..."
+                />
               </div>
 
               {/* Page Size */}

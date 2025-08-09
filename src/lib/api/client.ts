@@ -84,14 +84,9 @@ class ApiClient {
   private refreshTimer: NodeJS.Timeout | null = null;
 
   constructor() {
-    // URL do backend - via proxy interno para evitar CORS em dev
-    // Em produção, podemos manter chamadas diretas caso a origem seja a mesma
-    const directApiUrl =
-      process.env.NEXT_PUBLIC_API_URL ||
-      "https://fradema-backend-api-crguetd0f7gth9e3.brazilsouth-01.azurewebsites.net/api/v1";
-    // Usar proxy em desenvolvimento para resolver CORS definitivamente
-    const useProxy = process.env.NODE_ENV === "development";
-    const apiUrl = useProxy ? "/api/proxy" : directApiUrl;
+    // URL do backend - Local para desenvolvimento
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5058/api/v1";
 
     console.log("🔌 API Client initialized with URL:", apiUrl);
 
@@ -102,7 +97,7 @@ class ApiClient {
         "X-Client-Version": process.env.NEXT_PUBLIC_APP_VERSION || "1.0.0",
         "X-Client-Platform": "web",
       },
-      withCredentials: false,
+      withCredentials: true,
     });
 
     this.setupInterceptors();
@@ -533,26 +528,6 @@ class ApiClient {
   }
 
   private handleApiError(error: AxiosError): void {
-    // Be selective about when to surface toasts to the user
-    const status = error.response?.status || 0;
-    const method = (error.config?.method || "").toUpperCase();
-    const url = error.config?.url || "";
-
-    // Many GET endpoints in dashboard can legitimately fail (e.g., migrations not applied)
-    // and upstream callers handle it gracefully. Avoid noisy toasts for these cases.
-    const isReadOnly = method === "GET";
-    const isContractsRead = /\/contracts(\/|\?|$)/.test(url || "");
-
-    if (
-      isReadOnly &&
-      (status >= 500 || status === 404) &&
-      (isContractsRead || true)
-    ) {
-      // Log but don't toast
-      console.warn("Silenced API error (read-only):", { status, method, url });
-      return;
-    }
-
     if (this.shouldSuppressError()) {
       return;
     }

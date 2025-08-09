@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, RefObject } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface UseIntersectionObserverProps {
   threshold?: number;
@@ -16,7 +16,7 @@ export function useIntersectionObserver({
 }: UseIntersectionObserverProps = {}): [
   React.RefObject<Element>,
   boolean,
-  IntersectionObserverEntry | undefined,
+  IntersectionObserverEntry | undefined
 ] {
   const elementRef = useRef<Element>(null);
   const [entry, setEntry] = useState<IntersectionObserverEntry>();
@@ -45,7 +45,13 @@ export function useIntersectionObserver({
     return () => observer.disconnect();
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elementRef?.current, thresholdString, root, rootMargin, frozen]);
+  }, [
+    elementRef?.current,
+    thresholdString,
+    root,
+    rootMargin,
+    frozen,
+  ]);
 
-  return [elementRef as RefObject<Element>, isVisible, entry];
+  return [elementRef, isVisible, entry];
 }

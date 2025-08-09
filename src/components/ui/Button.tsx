@@ -429,7 +429,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     // Refs for advanced interaction handling
     const buttonRef = React.useRef<HTMLButtonElement | null>(null);
-    const rippleTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    const rippleTimeoutRef = React.useRef<NodeJS.Timeout>();
 
     // Forwarded ref management with multiple ref support
     const combinedRef = React.useCallback(

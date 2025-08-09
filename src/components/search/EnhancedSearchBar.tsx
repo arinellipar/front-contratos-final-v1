@@ -274,7 +274,7 @@ class SearchEngine {
       contratada: highlightQuery(contract.contratada),
       objeto: highlightQuery(contract.objeto),
       categoriaContrato: highlightQuery(contract.categoriaContrato),
-      filial: highlightQuery(String(contract.filial)),
+      filial: highlightQuery(contract.filial),
     };
   }
 
@@ -331,7 +331,7 @@ class SearchEngine {
     // Branch filter
     if (
       filters.branches?.length &&
-      !filters.branches.includes(String(contract.filial))
+      !filters.branches.includes(contract.filial)
     ) {
       return false;
     }

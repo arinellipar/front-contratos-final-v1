@@ -4,7 +4,6 @@
 import { useState } from "react";
 import {
   ContractCategory,
-  Filial,
   ContractFilters as IContractFilters,
 } from "@/lib/types/contract";
 import { Button } from "@/components/ui/Button";
@@ -31,7 +30,7 @@ export function ContractFilters({
       dataInicio: undefined,
       dataFim: undefined,
       categoriaContrato: undefined,
-      filial: undefined,
+      filial: "",
       page: 1,
     });
   };
@@ -104,13 +103,7 @@ export function ContractFilters({
               <input
                 type="text"
                 value={filters.filial || ""}
-                onChange={(e) =>
-                  onFilterChange({
-                    filial: e.target.value
-                      ? (Number(e.target.value) as Filial)
-                      : undefined,
-                  })
-                }
+                onChange={(e) => onFilterChange({ filial: e.target.value })}
                 placeholder="Nome da filial..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -235,7 +228,7 @@ export function ContractFilters({
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
               Filial: {filters.filial}
               <button
-                onClick={() => onFilterChange({ filial: undefined })}
+                onClick={() => onFilterChange({ filial: "" })}
                 className="ml-2 hover:text-purple-600"
               >
                 <X className="w-3 h-3" />

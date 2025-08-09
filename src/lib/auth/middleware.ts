@@ -102,8 +102,6 @@ const PUBLIC_ROUTES = [
   "/auth/verify-email",
   "/auth/error",
   "/api/auth",
-  "/api/proxy",
-  "/connection-test",
   "/_next",
   "/favicon.ico",
   "/public",

@@ -12,54 +12,15 @@ export enum ContractCategory {
   Software = "Software",
   Aluguel = "Aluguel",
   TI = "TI",
-  ContasConsumo = "Contas de Consumo",
   Outros = "Outros",
-}
-
-/**
- * Payment type enumeration
- */
-export enum TipoPagamento {
-  AVista = 1,
-  Parcelado = 2,
-}
-
-/**
- * Payment method enumeration
- */
-export enum FormaPagamento {
-  Pix = 1,
-  TED = 2,
-  Transferencia = 3,
-  Boleto = 4,
-  CartaoCredito = 5,
-}
-
-/**
- * Filial enumeration
- */
-export enum Filial {
-  RioDeJaneiro = 1,
-  Campinas = 2,
-  Brasilia = 3,
-  Curitiba = 4,
-  SaoPaulo = 5,
-  Joinville = 6,
-  BeloHorizonte = 7,
-  Salvador = 8,
-  Vitoria = 9,
-  Recife = 10,
-  Manaus = 11,
-  ZonaDaMataMineira = 12,
-  RibeiraoPreto = 13,
-  NovaIorque = 14,
-  Orlando = 15,
 }
 
 /**
  * Base contract interface matching the backend Contract model
  */
 export interface Contract {
+  empresa: string;
+  dataVencimento: string;
   id: number;
   contrato: string;
   contratante: string;
@@ -71,14 +32,8 @@ export interface Contract {
   multa?: number;
   avisoPrevia?: number;
   observacoes?: string;
-  filial: Filial;
+  filial: string;
   categoriaContrato: string;
-  setorResponsavel: string;
-  valorTotalContrato: number;
-  tipoPagamento: TipoPagamento;
-  quantidadeParcelas?: number;
-  formaPagamento: FormaPagamento;
-  dataFinal: string; // ISO date string
   dataCriacao: string; // ISO date string
   dataAtualizacao?: string; // ISO date string
   userId: string;
@@ -111,14 +66,8 @@ export interface ContractCreateDto {
   multa?: number; // Keep as number for frontend, will be converted to decimal in backend
   avisoPrevia?: number;
   observacoes?: string;
-  filial: Filial;
+  filial: string;
   categoriaContrato: ContractCategory;
-  setorResponsavel?: string;
-  valorTotalContrato?: number;
-  tipoPagamento?: TipoPagamento;
-  quantidadeParcelas?: number;
-  formaPagamento?: FormaPagamento;
-  dataFinal?: string;
   arquivoPdf?: File;
 }
 
@@ -136,14 +85,8 @@ export interface ContractUpdateDto {
   multa?: number;
   avisoPrevia?: number;
   observacoes?: string;
-  filial?: Filial;
+  filial?: string;
   categoriaContrato?: ContractCategory;
-  setorResponsavel?: string;
-  valorTotalContrato?: number;
-  tipoPagamento?: TipoPagamento;
-  quantidadeParcelas?: number;
-  formaPagamento?: FormaPagamento;
-  dataFinal?: string;
   arquivoPdf?: File;
 }
 
@@ -156,7 +99,7 @@ export interface ContractFilters {
   dataInicio?: string; // ISO date string
   dataFim?: string; // ISO date string
   categoriaContrato?: ContractCategory | string;
-  filial?: Filial;
+  filial?: string;
   page?: number;
   pageSize?: number;
   sortBy?: string;
@@ -472,143 +415,10 @@ export const ContractCategoryDisplay = {
     icon: "⚙️",
     color: "cyan",
   },
-  [ContractCategory.ContasConsumo]: {
-    label: "Contas de Consumo",
-    icon: "🧾",
-    color: "green",
-  },
   [ContractCategory.Outros]: {
     label: "Outros",
     icon: "📁",
     color: "gray",
-  },
-} as const;
-
-/**
- * Payment type display names
- */
-export const TipoPagamentoDisplay = {
-  [TipoPagamento.AVista]: {
-    label: "À Vista",
-    icon: "💰",
-    color: "green",
-  },
-  [TipoPagamento.Parcelado]: {
-    label: "Parcelado",
-    icon: "💳",
-    color: "blue",
-  },
-} as const;
-
-/**
- * Payment method display names
- */
-export const FormaPagamentoDisplay = {
-  [FormaPagamento.Pix]: {
-    label: "PIX",
-    icon: "🔷",
-    color: "purple",
-  },
-  [FormaPagamento.TED]: {
-    label: "TED",
-    icon: "🏦",
-    color: "blue",
-  },
-  [FormaPagamento.Transferencia]: {
-    label: "Transferência",
-    icon: "💱",
-    color: "cyan",
-  },
-  [FormaPagamento.Boleto]: {
-    label: "Boleto",
-    icon: "📄",
-    color: "orange",
-  },
-  [FormaPagamento.CartaoCredito]: {
-    label: "Cartão de Crédito",
-    icon: "💳",
-    color: "red",
-  },
-} as const;
-
-/**
- * Filial display names
- */
-export const FilialDisplay = {
-  [Filial.RioDeJaneiro]: {
-    label: "Rio de Janeiro",
-    icon: "🏖️",
-    color: "blue",
-  },
-  [Filial.Campinas]: {
-    label: "Campinas",
-    icon: "🏭",
-    color: "purple",
-  },
-  [Filial.Brasilia]: {
-    label: "Brasília",
-    icon: "🏛️",
-    color: "yellow",
-  },
-  [Filial.Curitiba]: {
-    label: "Curitiba",
-    icon: "🌲",
-    color: "green",
-  },
-  [Filial.SaoPaulo]: {
-    label: "São Paulo",
-    icon: "🏙️",
-    color: "gray",
-  },
-  [Filial.Joinville]: {
-    label: "Joinville",
-    icon: "🏘️",
-    color: "teal",
-  },
-  [Filial.BeloHorizonte]: {
-    label: "Belo Horizonte",
-    icon: "⛰️",
-    color: "orange",
-  },
-  [Filial.Salvador]: {
-    label: "Salvador",
-    icon: "🏝️",
-    color: "yellow",
-  },
-  [Filial.Vitoria]: {
-    label: "Vitória",
-    icon: "🌊",
-    color: "blue",
-  },
-  [Filial.Recife]: {
-    label: "Recife",
-    icon: "🏖️",
-    color: "coral",
-  },
-  [Filial.Manaus]: {
-    label: "Manaus",
-    icon: "🌳",
-    color: "green",
-  },
-  [Filial.ZonaDaMataMineira]: {
-    label: "Zona da Mata Mineira",
-    icon: "🌿",
-    color: "green",
-  },
-  [Filial.RibeiraoPreto]: {
-    label: "Ribeirão Preto",
-    icon: "🌾",
-    color: "brown",
-  },
-  [Filial.NovaIorque]: {
-    label: "Nova Iorque",
-    icon: "🗽",
-    color: "blue",
-  },
-  [Filial.Orlando]: {
-    label: "Orlando",
-    icon: "🎢",
-    color: "purple",
   },
 } as const;
 
