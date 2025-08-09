@@ -1,6 +1,6 @@
-import tailwindcssAnimate from "tailwindcss-animate";
-import tailwindcssForms from "@tailwindcss/forms";
-import tailwindcssTypography from "@tailwindcss/typography";
+const tailwindcssAnimate = require("tailwindcss-animate");
+const tailwindcssForms = require("@tailwindcss/forms");
+const tailwindcssTypography = require("@tailwindcss/typography");
 
 /** @type {import('tailwindcss').Config} */
 const config = {
@@ -405,4 +405,4 @@ const config = {
   ],
 };
 
-export default config;
+module.exports = config;
