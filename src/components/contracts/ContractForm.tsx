@@ -83,6 +83,13 @@ const parseCalculatorValue = (value: string): number => {
   return parseFloat(cleanValue) || 0;
 };
 
+// Função para converter valor bruto (somente dígitos) em número com 2 casas decimais
+const parseRawCents = (raw: string): number => {
+  const numbersOnly = raw.replace(/\D/g, "");
+  if (!numbersOnly) return 0;
+  return parseInt(numbersOnly, 10) / 100;
+};
+
 const contractSchema = z.object({
   contrato: z.string().min(1, "Contrato é obrigatório").max(2000),
   contratante: z.string().min(1, "Contratante é obrigatório").max(500),
@@ -220,7 +227,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
 
   useEffect(() => {
     if (valorTotal && quantidadeParcelas) {
-      const valorNumerico = parseCalculatorValue(valorTotal);
+      const valorNumerico = parseRawCents(valorTotal);
       const parcelas = parseInt(quantidadeParcelas);
 
       if (valorNumerico > 0 && parcelas > 0) {
@@ -451,7 +458,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
       filial: data.filial,
       categoriaContrato: data.categoriaContrato.trim(),
       setorResponsavel: data.setorResponsavel.trim(),
-      valorTotalContrato: parseCalculatorValue(data.valorTotalContrato),
+      valorTotalContrato: parseRawCents(data.valorTotalContrato),
       tipoPagamento: data.tipoPagamento,
       quantidadeParcelas: data.quantidadeParcelas
         ? Number(data.quantidadeParcelas)
@@ -991,14 +998,13 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
             {tipoPagamento === TipoPagamento.AVista ? (
               <>
                 Valor total de{" "}
-                {formatCurrency(parseCalculatorValue(valorTotal || "0"))} em 1
-                parcela
+                {formatCurrency(parseRawCents(valorTotal || "0"))} em 1 parcela
               </>
             ) : (
               <>
                 Baseado no valor total de{" "}
-                {formatCurrency(parseCalculatorValue(valorTotal || "0"))}{" "}
-                dividido por {quantidadeParcelas} parcelas
+                {formatCurrency(parseRawCents(valorTotal || "0"))} dividido por{" "}
+                {quantidadeParcelas} parcelas
               </>
             )}
           </p>
