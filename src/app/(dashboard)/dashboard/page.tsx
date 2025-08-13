@@ -236,14 +236,36 @@ export default function ModernDashboardPage() {
         14,
       totalValue: dashboardMetrics?.totalValue || 2547890,
       monthlyGrowth: 12.5,
-      categoryDistribution: dashboardMetrics?.contractsByCategory ||
-        statistics?.contractsByCategory || {
-          Software: 45,
-          Consultoria: 32,
-          Manutenção: 28,
-          Licenças: 25,
-          Outros: 26,
-        },
+      categoryDistribution: (() => {
+        const fromDashboard = dashboardMetrics?.contractsByCategory;
+        const fromStats = statistics?.contractsByCategory;
+
+        // Se ambos estão vazios ou undefined, usar dados padrão
+        if (
+          (!fromDashboard || Object.keys(fromDashboard).length === 0) &&
+          (!fromStats || Object.keys(fromStats).length === 0)
+        ) {
+          return {
+            Software: 45,
+            Consultoria: 32,
+            Manutenção: 28,
+            Licenças: 25,
+            Outros: 26,
+          };
+        }
+
+        // Usar o primeiro que tiver dados
+        return (
+          fromDashboard ||
+          fromStats || {
+            Software: 45,
+            Consultoria: 32,
+            Manutenção: 28,
+            Licenças: 25,
+            Outros: 26,
+          }
+        );
+      })(),
       recentActivity: (() => {
         const activities = [];
 
@@ -1417,24 +1439,29 @@ export default function ModernDashboardPage() {
                     </p>
                     <p
                       className={`${getDynamicFontSize(
-                        Object.entries(
-                          dashboardData.categoryDistribution
-                        ).reduce((a, b) => (a[1] > b[1] ? a : b))[0],
+                        Object.entries(dashboardData.categoryDistribution)
+                          .length > 0
+                          ? Object.entries(
+                              dashboardData.categoryDistribution
+                            ).reduce((a, b) => (a[1] > b[1] ? a : b))[0]
+                          : "N/A",
                         "text-base"
                       )} font-bold text-violet-900`}
                     >
-                      {
-                        Object.entries(
-                          dashboardData.categoryDistribution
-                        ).reduce((a, b) => (a[1] > b[1] ? a : b))[0]
-                      }
+                      {Object.entries(dashboardData.categoryDistribution)
+                        .length > 0
+                        ? Object.entries(
+                            dashboardData.categoryDistribution
+                          ).reduce((a, b) => (a[1] > b[1] ? a : b))[0]
+                        : "N/A"}
                     </p>
                     <p className="text-xs text-violet-600">
-                      {
-                        Object.entries(
-                          dashboardData.categoryDistribution
-                        ).reduce((a, b) => (a[1] > b[1] ? a : b))[1]
-                      }{" "}
+                      {Object.entries(dashboardData.categoryDistribution)
+                        .length > 0
+                        ? Object.entries(
+                            dashboardData.categoryDistribution
+                          ).reduce((a, b) => (a[1] > b[1] ? a : b))[1]
+                        : 0}{" "}
                       contratos
                     </p>
                   </div>
