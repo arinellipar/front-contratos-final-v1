@@ -220,51 +220,36 @@ export default function ModernDashboardPage() {
 
   const dashboardData: DashboardMetrics = useMemo(() => {
     const weekDays = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
-    const weeklyTrend = weekDays.map((day, index) => ({
+    const weeklyTrend = weekDays.map((day) => ({
       day,
-      contracts: Math.floor(Math.random() * 20) + 10,
-      value: Math.floor(Math.random() * 100000) + 50000,
+      contracts: 0,
+      value: 0,
     }));
 
     return {
       totalContracts:
-        dashboardMetrics?.totalContracts || statistics?.totalContracts || 156,
-      activeContracts: dashboardMetrics?.activeContracts || 142,
+        dashboardMetrics?.totalContracts || statistics?.totalContracts || 0,
+      activeContracts: dashboardMetrics?.activeContracts || 0,
       expiringContracts:
         dashboardMetrics?.expiringContracts?.length ||
         statistics?.expiringContracts?.length ||
-        14,
-      totalValue: dashboardMetrics?.totalValue || 2547890,
-      monthlyGrowth: 12.5,
+        0,
+      totalValue: dashboardMetrics?.totalValue || 0,
+      monthlyGrowth: 0,
       categoryDistribution: (() => {
         const fromDashboard = dashboardMetrics?.contractsByCategory;
         const fromStats = statistics?.contractsByCategory;
 
-        // Se ambos estão vazios ou undefined, usar dados padrão
+        // Se ambos estão vazios ou undefined, retornar objeto vazio
         if (
           (!fromDashboard || Object.keys(fromDashboard).length === 0) &&
           (!fromStats || Object.keys(fromStats).length === 0)
         ) {
-          return {
-            Software: 45,
-            Consultoria: 32,
-            Manutenção: 28,
-            Licenças: 25,
-            Outros: 26,
-          };
+          return {};
         }
 
         // Usar o primeiro que tiver dados
-        return (
-          fromDashboard ||
-          fromStats || {
-            Software: 45,
-            Consultoria: 32,
-            Manutenção: 28,
-            Licenças: 25,
-            Outros: 26,
-          }
-        );
+        return fromDashboard || fromStats || {};
       })(),
       recentActivity: (() => {
         const activities = [];
@@ -306,10 +291,10 @@ export default function ModernDashboardPage() {
           .slice(0, 4);
       })(),
       performanceMetrics: {
-        renewalRate: dashboardMetrics?.renewalRate || 87,
-        averageContractValue: dashboardMetrics?.averageValue || 45780,
-        complianceScore: dashboardMetrics?.complianceScore || 94,
-        riskScore: dashboardMetrics?.riskScore || 18,
+        renewalRate: dashboardMetrics?.renewalRate || 0,
+        averageContractValue: dashboardMetrics?.averageValue || 0,
+        complianceScore: dashboardMetrics?.complianceScore || 0,
+        riskScore: dashboardMetrics?.riskScore || 0,
       },
       weeklyTrend,
     };
@@ -354,6 +339,13 @@ export default function ModernDashboardPage() {
       </Button>
     </div>
   );
+
+  // Verificar se não há dados
+  const hasNoData =
+    dashboardData.totalContracts === 0 &&
+    dashboardData.activeContracts === 0 &&
+    dashboardData.totalValue === 0 &&
+    Object.keys(dashboardData.categoryDistribution).length === 0;
 
   if (isLoading || isLoadingAny) {
     return (
@@ -403,6 +395,64 @@ export default function ModernDashboardPage() {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar mensagem quando não há dados
+  if (hasNoData && !isLoadingAny && !hasErrors) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/40 relative overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto p-6 space-y-8 relative z-10">
+          <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 ring-1 ring-gray-900/5">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">
+                  {new Date().toLocaleDateString("pt-BR", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </p>
+                <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+                <p className="text-gray-600 mt-1">
+                  Visão geral do sistema de contratos empresariais
+                </p>
+              </div>
+
+              <CreateButton
+                onClick={() => router.push("/contracts/create")}
+                text="Novo Contrato"
+              />
+            </div>
+
+            <div className="text-center py-16">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-6">
+                <FileText className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Nenhum contrato encontrado
+              </h3>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                Parece que ainda não há contratos cadastrados no sistema. Comece
+                criando seu primeiro contrato para ver as estatísticas aqui.
+              </p>
+              <Button
+                onClick={() => router.push("/contracts/create")}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Criar Primeiro Contrato
+              </Button>
             </div>
           </div>
         </div>
