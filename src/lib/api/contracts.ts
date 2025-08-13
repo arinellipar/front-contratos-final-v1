@@ -185,6 +185,31 @@ export const contractsApi = {
     }
     formData.append("categoriaContrato", data.categoriaContrato);
 
+    if (!data.setorResponsavel) {
+      throw new Error("Setor responsável é obrigatório");
+    }
+    formData.append("setorResponsavel", data.setorResponsavel);
+
+    if (!data.valorTotalContrato || data.valorTotalContrato <= 0) {
+      throw new Error("Valor total do contrato é obrigatório e deve ser maior que zero");
+    }
+    formData.append("valorTotalContrato", data.valorTotalContrato.toString());
+
+    if (!data.tipoPagamento) {
+      throw new Error("Tipo de pagamento é obrigatório");
+    }
+    formData.append("tipoPagamento", data.tipoPagamento.toString());
+
+    if (!data.formaPagamento) {
+      throw new Error("Forma de pagamento é obrigatória");
+    }
+    formData.append("formaPagamento", data.formaPagamento.toString());
+
+    if (!data.dataFinal) {
+      throw new Error("Data final é obrigatória");
+    }
+    formData.append("dataFinal", data.dataFinal);
+
     // Adicionar campos opcionais se existirem
     if (data.rescisao !== undefined && data.rescisao !== null) {
       formData.append("rescisao", data.rescisao.toString());
@@ -194,6 +219,9 @@ export const contractsApi = {
     }
     if (data.avisoPrevia !== undefined && data.avisoPrevia !== null) {
       formData.append("avisoPrevia", data.avisoPrevia.toString());
+    }
+    if (data.quantidadeParcelas !== undefined && data.quantidadeParcelas !== null) {
+      formData.append("quantidadeParcelas", data.quantidadeParcelas.toString());
     }
     if (data.observacoes) {
       formData.append("observacoes", data.observacoes);
@@ -224,8 +252,13 @@ export const contractsApi = {
     formData.append("objeto", data.objeto || "");
     formData.append("dataContrato", data.dataContrato || "");
     formData.append("prazo", (data.prazo || 0).toString());
-    formData.append("filial", data.filial || "");
+    formData.append("filial", (data.filial || 1).toString());
     formData.append("categoriaContrato", data.categoriaContrato || "");
+    formData.append("setorResponsavel", data.setorResponsavel || "");
+    formData.append("valorTotalContrato", (data.valorTotalContrato || 0).toString());
+    formData.append("tipoPagamento", (data.tipoPagamento || 1).toString());
+    formData.append("formaPagamento", (data.formaPagamento || 1).toString());
+    formData.append("dataFinal", data.dataFinal || "");
 
     // Adicionar campos opcionais se existirem
     if (data.rescisao !== undefined && data.rescisao !== null) {
@@ -236,6 +269,9 @@ export const contractsApi = {
     }
     if (data.avisoPrevia !== undefined && data.avisoPrevia !== null) {
       formData.append("avisoPrevia", data.avisoPrevia.toString());
+    }
+    if (data.quantidadeParcelas !== undefined && data.quantidadeParcelas !== null) {
+      formData.append("quantidadeParcelas", data.quantidadeParcelas.toString());
     }
     if (data.observacoes) {
       formData.append("observacoes", data.observacoes);

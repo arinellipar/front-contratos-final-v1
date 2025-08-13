@@ -1,15 +1,87 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { contractsApi } from "@/lib/api/contracts";
-import { ContractCategory, ContractCreateDto } from "@/lib/types/contract";
+import {
+  ContractCategory,
+  ContractCreateDto,
+  TipoPagamento,
+  FormaPagamento,
+  Filial,
+} from "@/lib/types/contract";
 import { Button } from "@/components/ui/Button";
 import { FileUp, Save, X } from "lucide-react";
 import { SubmitHandler } from "react-hook-form";
+
+// Funções helper para formatação de valores
+const formatCurrency = (value: string | number): string => {
+  const numValue =
+    typeof value === "string"
+      ? parseFloat(value.replace(/[^\d,.-]/g, "").replace(",", "."))
+      : value;
+  if (isNaN(numValue)) return "";
+
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numValue);
+};
+
+const parseCurrency = (value: string): number => {
+  return parseFloat(value.replace(/[^\d,.-]/g, "").replace(",", ".")) || 0;
+};
+
+const formatNumberWithSeparators = (value: string | number): string => {
+  const numValue =
+    typeof value === "string"
+      ? parseFloat(value.replace(/[^\d,.-]/g, "").replace(",", "."))
+      : value;
+  if (isNaN(numValue)) return "";
+
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numValue);
+};
+
+// Função para formatar valor como calculadora (digitação da direita para esquerda)
+const formatCalculatorValue = (value: string): string => {
+  // Remove tudo exceto números
+  const numbersOnly = value.replace(/\D/g, "");
+
+  if (numbersOnly === "") return "";
+
+  // Se tem menos de 3 dígitos, adiciona zeros à esquerda
+  let paddedValue = numbersOnly.padStart(3, "0");
+
+  // Se tem 3 ou mais dígitos, insere o ponto decimal
+  if (paddedValue.length >= 3) {
+    const integerPart = paddedValue.slice(0, -2);
+    const decimalPart = paddedValue.slice(-2);
+
+    // Formata com separadores de milhares
+    const formattedInteger = new Intl.NumberFormat("pt-BR").format(
+      parseInt(integerPart)
+    );
+
+    return `${formattedInteger},${decimalPart}`;
+  }
+
+  return paddedValue;
+};
+
+// Função para converter valor formatado em número
+const parseCalculatorValue = (value: string): number => {
+  // Remove separadores de milhares e converte vírgula em ponto
+  const cleanValue = value.replace(/\./g, "").replace(",", ".");
+  return parseFloat(cleanValue) || 0;
+};
 
 const contractSchema = z.object({
   contrato: z.string().min(1, "Contrato é obrigatório").max(2000),
@@ -54,8 +126,34 @@ const contractSchema = z.object({
       }
     ),
   observacoes: z.string().max(2000).optional(),
-  filial: z.string().min(1, "Filial é obrigatória").max(200),
-  categoriaContrato: z.nativeEnum(ContractCategory),
+  filial: z.nativeEnum(Filial),
+  categoriaContrato: z
+    .string()
+    .min(1, "Categoria do contrato é obrigatória")
+    .max(50),
+  setorResponsavel: z
+    .string()
+    .min(1, "Setor responsável é obrigatório")
+    .max(200),
+  valorTotalContrato: z
+    .string()
+    .min(1, "Valor total do contrato é obrigatório")
+    .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
+      message: "O valor total deve ser maior que zero",
+    }),
+  tipoPagamento: z.nativeEnum(TipoPagamento),
+  quantidadeParcelas: z
+    .string()
+    .optional()
+    .refine(
+      (val) =>
+        !val || (!isNaN(Number(val)) && Number(val) >= 1 && Number(val) <= 60),
+      {
+        message: "A quantidade de parcelas deve ser entre 1 e 60",
+      }
+    ),
+  formaPagamento: z.nativeEnum(FormaPagamento),
+  dataFinal: z.string().min(1, "Data final é obrigatória"),
 });
 
 type ContractFormData = {
@@ -69,8 +167,14 @@ type ContractFormData = {
   multa?: string;
   avisoPrevia?: string;
   observacoes?: string;
-  filial: string;
-  categoriaContrato: ContractCategory;
+  filial: Filial;
+  categoriaContrato: string;
+  setorResponsavel: string;
+  valorTotalContrato: string;
+  tipoPagamento: TipoPagamento;
+  quantidadeParcelas?: string;
+  formaPagamento: FormaPagamento;
+  dataFinal: string;
   arquivoPdf?: File;
 };
 
@@ -83,20 +187,118 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [valorPorParcela, setValorPorParcela] = useState<string>("");
+  const [valorTotalFormatado, setValorTotalFormatado] = useState<string>("");
+  const [valorTotalRaw, setValorTotalRaw] = useState<string>("");
 
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<ContractFormData>({
     resolver: zodResolver(contractSchema),
     defaultValues: {
       prazo: "30",
       dataContrato: new Date().toISOString().split("T")[0],
-      categoriaContrato: ContractCategory.Outros,
+      dataFinal: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0],
+      categoriaContrato: "Outros",
+      filial: Filial.RioDeJaneiro,
+      tipoPagamento: TipoPagamento.AVista,
+      formaPagamento: FormaPagamento.Pix,
       ...initialData,
     },
   });
+
+  // Observar mudanças no valor total e quantidade de parcelas para calcular valor por parcela
+  const valorTotal = watch("valorTotalContrato");
+  const quantidadeParcelas = watch("quantidadeParcelas");
+  const tipoPagamento = watch("tipoPagamento");
+
+  useEffect(() => {
+    if (valorTotal && quantidadeParcelas) {
+      const valorNumerico = parseCalculatorValue(valorTotal);
+      const parcelas = parseInt(quantidadeParcelas);
+
+      if (valorNumerico > 0 && parcelas > 0) {
+        const valorParcela = valorNumerico / parcelas;
+        setValorPorParcela(formatCurrency(valorParcela));
+      } else {
+        setValorPorParcela("");
+      }
+    } else {
+      setValorPorParcela("");
+    }
+  }, [valorTotal, quantidadeParcelas, tipoPagamento]);
+
+  // Formatar valor total automaticamente
+  useEffect(() => {
+    if (valorTotal) {
+      setValorTotalFormatado(formatCalculatorValue(valorTotal));
+    } else {
+      setValorTotalFormatado("");
+    }
+  }, [valorTotal]);
+
+  // LÓGICA SIMPLES: À vista = 1 parcela, Parcelado = > 1 parcela
+  useEffect(() => {
+    if (tipoPagamento === TipoPagamento.AVista) {
+      // SEMPRE forçar "1" para pagamento à vista
+      if (quantidadeParcelas !== "1") {
+        console.log(
+          "🔒 Forçando quantidade de parcelas para '1' (pagamento à vista)"
+        );
+        setValue("quantidadeParcelas", "1");
+      }
+    } else if (
+      tipoPagamento === TipoPagamento.Parcelado &&
+      (!quantidadeParcelas || parseInt(quantidadeParcelas) <= 1)
+    ) {
+      setValue("quantidadeParcelas", "2");
+    }
+  }, [tipoPagamento, quantidadeParcelas, setValue]);
+
+  // Controlar forma de pagamento baseado no tipo de pagamento
+  useEffect(() => {
+    const formaPagamentoAtual = watch("formaPagamento");
+
+    if (formaPagamentoAtual === FormaPagamento.Pix) {
+      // Se escolher PIX, força pagamento à vista
+      if (tipoPagamento !== TipoPagamento.AVista) {
+        setValue("tipoPagamento", TipoPagamento.AVista);
+        setValue("quantidadeParcelas", "1");
+        toast.success(
+          "PIX selecionado. Tipo de pagamento alterado para 'À Vista' automaticamente."
+        );
+      }
+      // Garantir que quantidade de parcelas seja sempre "1" quando PIX for selecionado
+      if (quantidadeParcelas !== "1") {
+        setValue("quantidadeParcelas", "1");
+      }
+    }
+  }, [tipoPagamento, setValue, watch, quantidadeParcelas]);
+
+  // Monitorar mudanças na forma de pagamento para bloquear parcelas quando PIX for selecionado
+  useEffect(() => {
+    const formaPagamentoAtual = watch("formaPagamento");
+
+    if (formaPagamentoAtual === FormaPagamento.Pix) {
+      // Se PIX for selecionado, garantir que seja à vista com 1 parcela
+      setValue("tipoPagamento", TipoPagamento.AVista);
+      setValue("quantidadeParcelas", "1");
+    }
+  }, [watch("formaPagamento"), setValue]);
+
+  // Monitorar mudanças no tipo de pagamento para bloquear/desbloquear campo de parcelas
+  useEffect(() => {
+    if (tipoPagamento === TipoPagamento.AVista) {
+      // Quando mudar para à vista, sempre definir como "1" e bloquear
+      setValue("quantidadeParcelas", "1");
+    }
+  }, [tipoPagamento, setValue]);
 
   const createMutation = useMutation({
     mutationFn: contractsApi.create,
@@ -174,12 +376,59 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
       toast.error("Prazo é obrigatório e deve ser maior que zero");
       return;
     }
-    if (!data.filial?.trim()) {
+    if (!data.filial) {
       toast.error("Filial é obrigatória");
       return;
     }
-    if (!data.categoriaContrato) {
+    if (!data.categoriaContrato?.trim()) {
       toast.error("Categoria do contrato é obrigatória");
+      return;
+    }
+    if (!data.setorResponsavel?.trim()) {
+      toast.error("Setor responsável é obrigatório");
+      return;
+    }
+    if (!data.valorTotalContrato || Number(data.valorTotalContrato) <= 0) {
+      toast.error(
+        "Valor total do contrato é obrigatório e deve ser maior que zero"
+      );
+      return;
+    }
+    if (!data.tipoPagamento) {
+      toast.error("Tipo de pagamento é obrigatório");
+      return;
+    }
+    if (!data.formaPagamento) {
+      toast.error("Forma de pagamento é obrigatória");
+      return;
+    }
+
+    // Validações específicas de regras de negócio
+    if (data.tipoPagamento === TipoPagamento.AVista) {
+      // FORÇAR quantidade de parcelas como "1" para pagamento à vista
+      if (!data.quantidadeParcelas || parseInt(data.quantidadeParcelas) !== 1) {
+        console.log(
+          "🔒 Forçando quantidade de parcelas para '1' no submit (pagamento à vista)"
+        );
+        data.quantidadeParcelas = "1";
+      }
+    } else if (data.tipoPagamento === TipoPagamento.Parcelado) {
+      if (!data.quantidadeParcelas || parseInt(data.quantidadeParcelas) < 2) {
+        toast.error("Pagamento parcelado deve ter pelo menos 2 parcelas");
+        return;
+      }
+    }
+
+    if (
+      data.formaPagamento === FormaPagamento.Pix &&
+      data.tipoPagamento !== TipoPagamento.AVista
+    ) {
+      toast.error("PIX só pode ser usado para pagamento à vista");
+      return;
+    }
+
+    if (!data.dataFinal) {
+      toast.error("Data final é obrigatória");
       return;
     }
 
@@ -199,8 +448,16 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
       multa: data.multa ? Number(data.multa) : undefined,
       avisoPrevia: data.avisoPrevia ? Number(data.avisoPrevia) : undefined,
       observacoes: data.observacoes?.trim(),
-      filial: data.filial.trim(),
-      categoriaContrato: String(data.categoriaContrato) as any, // Convert enum to string explicitly
+      filial: data.filial,
+      categoriaContrato: data.categoriaContrato.trim(),
+      setorResponsavel: data.setorResponsavel.trim(),
+      valorTotalContrato: parseCalculatorValue(data.valorTotalContrato),
+      tipoPagamento: data.tipoPagamento,
+      quantidadeParcelas: data.quantidadeParcelas
+        ? Number(data.quantidadeParcelas)
+        : undefined,
+      formaPagamento: data.formaPagamento,
+      dataFinal: data.dataFinal,
       arquivoPdf: selectedFile || undefined, // Garante que o arquivo vá para o backend
     };
 
@@ -220,10 +477,16 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
     );
     console.log(`  - DataContrato: "${submitData.dataContrato}"`);
     console.log(`  - Prazo: ${submitData.prazo}`);
-    console.log(
-      `  - Filial: "${submitData.filial}" (${submitData.filial.length} chars)`
-    );
+    console.log(`  - Filial: ${submitData.filial}`);
     console.log(`  - CategoriaContrato: "${submitData.categoriaContrato}"`);
+    console.log(`  - SetorResponsavel: "${submitData.setorResponsavel}"`);
+    console.log(`  - ValorTotalContrato: R$ ${submitData.valorTotalContrato}`);
+    console.log(`  - TipoPagamento: ${submitData.tipoPagamento}`);
+    console.log(
+      `  - QuantidadeParcelas: ${submitData.quantidadeParcelas || "N/A"}`
+    );
+    console.log(`  - FormaPagamento: ${submitData.formaPagamento}`);
+    console.log(`  - DataFinal: "${submitData.dataFinal}"`);
     console.log(
       `  - ArquivoPdf: ${submitData.arquivoPdf ? `File(${submitData.arquivoPdf.name})` : "undefined"}`
     );
@@ -264,6 +527,58 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
 
       setSelectedFile(file);
       toast.success("Arquivo selecionado com sucesso");
+    }
+  };
+
+  const handleValorTotalChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = event.target.value;
+
+    // Remove tudo exceto números
+    const numbersOnly = value.replace(/\D/g, "");
+
+    if (numbersOnly === "") {
+      setValue("valorTotalContrato", "");
+      setValorTotalFormatado("");
+      setValorTotalRaw("");
+    } else {
+      // Formata como calculadora
+      const formattedValue = formatCalculatorValue(numbersOnly);
+      setValue("valorTotalContrato", numbersOnly);
+      setValorTotalFormatado(formattedValue);
+      setValorTotalRaw(numbersOnly);
+    }
+  };
+
+  const handleQuantidadeParcelasChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    // BLOQUEIO TOTAL: Se for pagamento à vista, NÃO PERMITE NENHUMA MUDANÇA
+    if (tipoPagamento === TipoPagamento.AVista) {
+      console.log(
+        "🔒 Tentativa de alterar parcelas bloqueada (pagamento à vista)"
+      );
+      event.preventDefault();
+      event.stopPropagation();
+      setValue("quantidadeParcelas", "1");
+      toast.success("Pagamento à vista sempre tem 1 parcela");
+      return;
+    }
+
+    const value = event.target.value;
+    const numericValue = parseInt(value);
+
+    // Para pagamento parcelado, mínimo 2 parcelas
+    if (
+      value === "" ||
+      isNaN(numericValue) ||
+      numericValue < 2 ||
+      numericValue > 60
+    ) {
+      setValue("quantidadeParcelas", "");
+    } else {
+      setValue("quantidadeParcelas", value);
     }
   };
 
@@ -453,8 +768,8 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
         </div>
       </div>
 
-      {/* Filial and Category */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Filial, Category and Sector */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
           <label
             htmlFor="filial"
@@ -462,12 +777,28 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
           >
             Filial <span className="text-red-500">*</span>
           </label>
-          <input
+          <select
             {...register("filial")}
-            type="text"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Nome da filial responsável"
-          />
+          >
+            <option value={Filial.RioDeJaneiro}>🏢 Rio de Janeiro</option>
+            <option value={Filial.Campinas}>🏢 Campinas</option>
+            <option value={Filial.Brasilia}>🏢 Brasília</option>
+            <option value={Filial.Curitiba}>🏢 Curitiba</option>
+            <option value={Filial.SaoPaulo}>🏢 São Paulo</option>
+            <option value={Filial.Joinville}>🏢 Joinville</option>
+            <option value={Filial.BeloHorizonte}>🏢 Belo Horizonte</option>
+            <option value={Filial.Salvador}>🏢 Salvador</option>
+            <option value={Filial.Vitoria}>🏢 Vitória</option>
+            <option value={Filial.Recife}>🏢 Recife</option>
+            <option value={Filial.Manaus}>🏢 Manaus</option>
+            <option value={Filial.ZonaDaMataMineira}>
+              🏢 Zona da Mata Mineira
+            </option>
+            <option value={Filial.RibeiraoPreto}>🏢 Ribeirão Preto</option>
+            <option value={Filial.NovaIorque}>🏢 Nova Iorque</option>
+            <option value={Filial.Orlando}>🏢 Orlando</option>
+          </select>
           {errors.filial && (
             <p className="text-sm text-red-600">{errors.filial.message}</p>
           )}
@@ -480,19 +811,252 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
           >
             Categoria do Contrato <span className="text-red-500">*</span>
           </label>
-          <select
+          <input
             {...register("categoriaContrato")}
+            type="text"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value={ContractCategory.Software}>💻 Software</option>
-            <option value={ContractCategory.Aluguel}>🏢 Aluguel</option>
-            <option value={ContractCategory.TI}>⚙️ TI</option>
-            <option value={ContractCategory.Outros}>📁 Outros</option>
-          </select>
+            placeholder="Ex: Software, Consultoria, Manutenção"
+          />
           {errors.categoriaContrato && (
             <p className="text-sm text-red-600">
               {errors.categoriaContrato.message}
             </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <label
+            htmlFor="setorResponsavel"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Setor Responsável <span className="text-red-500">*</span>
+          </label>
+          <input
+            {...register("setorResponsavel")}
+            type="text"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Ex: TI, RH, Financeiro"
+          />
+          {errors.setorResponsavel && (
+            <p className="text-sm text-red-600">
+              {errors.setorResponsavel.message}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Regras de Pagamento */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div className="flex items-start space-x-2">
+          <span className="text-yellow-600 text-lg">⚠️</span>
+          <div className="text-sm text-yellow-800">
+            <p className="font-medium mb-1">Regras de Pagamento:</p>
+            <ul className="text-xs space-y-1">
+              <li>
+                • <strong>Pagamento à Vista:</strong> Apenas 1 parcela
+              </li>
+              <li>
+                • <strong>Pagamento Parcelado:</strong> TED, Transferência,
+                Boleto ou Cartão de Crédito
+              </li>
+              <li>
+                • <strong>PIX:</strong> Força pagamento à vista automaticamente
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Financial Information */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <label
+            htmlFor="valorTotalContrato"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Valor Total do Contrato (R$) <span className="text-red-500">*</span>
+          </label>
+          <input
+            value={valorTotalFormatado}
+            onChange={handleValorTotalChange}
+            type="text"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Digite o valor (ex: 5000000 = R$ 50.000,00)"
+          />
+          {errors.valorTotalContrato && (
+            <p className="text-sm text-red-600">
+              {errors.valorTotalContrato.message}
+            </p>
+          )}
+          <p className="text-xs text-gray-500 mt-1">
+            💡 Digite apenas números: 5000000 = R$ 50.000,00 | 123456 = R$
+            1.234,56
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <label
+            htmlFor="tipoPagamento"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Tipo de Pagamento <span className="text-red-500">*</span>
+          </label>
+          <select
+            {...register("tipoPagamento", { setValueAs: (v) => Number(v) })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value={TipoPagamento.AVista}>💰 À Vista</option>
+            <option value={TipoPagamento.Parcelado}>📅 Parcelado</option>
+          </select>
+          {errors.tipoPagamento && (
+            <p className="text-sm text-red-600">
+              {errors.tipoPagamento.message}
+            </p>
+          )}
+          <p className="text-xs text-gray-500 mt-1">
+            💡 Selecionar PIX automaticamente define o tipo como "À Vista"
+          </p>
+        </div>
+
+        <div key={`parcelas-${tipoPagamento}`} className="space-y-2">
+          <label
+            htmlFor="quantidadeParcelas"
+            className={`block text-sm font-medium ${
+              tipoPagamento === TipoPagamento.AVista
+                ? "text-gray-400"
+                : "text-gray-700"
+            }`}
+          >
+            Quantidade de Parcelas
+            {tipoPagamento === TipoPagamento.AVista && (
+              <span className="text-xs text-gray-500 ml-2">
+                (automático para pagamento à vista)
+              </span>
+            )}
+          </label>
+          {tipoPagamento === TipoPagamento.AVista ? (
+            <>
+              <input
+                type="hidden"
+                {...register("quantidadeParcelas")}
+                value="1"
+                readOnly
+              />
+              <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-100 text-gray-600 select-none">
+                1
+              </div>
+            </>
+          ) : (
+            <input
+              {...register("quantidadeParcelas")}
+              value={quantidadeParcelas || ""}
+              onChange={handleQuantidadeParcelasChange}
+              type="number"
+              min="2"
+              max="60"
+              className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              placeholder="Ex: 12"
+            />
+          )}
+          {errors.quantidadeParcelas && (
+            <p className="text-sm text-red-600">
+              {errors.quantidadeParcelas.message}
+            </p>
+          )}
+          {tipoPagamento === TipoPagamento.AVista && (
+            <p className="text-xs text-blue-600 mt-1">
+              💡 Pagamento à vista: sempre 1 parcela
+            </p>
+          )}
+          {tipoPagamento === TipoPagamento.Parcelado && (
+            <p className="text-xs text-green-600 mt-1">
+              💡 Pagamento parcelado: mínimo 2 parcelas
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Valor por Parcela (calculado automaticamente) */}
+      {valorPorParcela && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-blue-800">
+              💰 Valor por Parcela (calculado automaticamente):
+            </span>
+            <span className="text-lg font-bold text-blue-900">
+              {valorPorParcela}
+            </span>
+          </div>
+          <p className="text-xs text-blue-600 mt-1">
+            {tipoPagamento === TipoPagamento.AVista ? (
+              <>
+                Valor total de{" "}
+                {formatCurrency(parseCalculatorValue(valorTotal || "0"))} em 1
+                parcela
+              </>
+            ) : (
+              <>
+                Baseado no valor total de{" "}
+                {formatCurrency(parseCalculatorValue(valorTotal || "0"))}{" "}
+                dividido por {quantidadeParcelas} parcelas
+              </>
+            )}
+          </p>
+        </div>
+      )}
+
+      {/* Payment Method and Final Date */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label
+            htmlFor="formaPagamento"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Forma de Pagamento <span className="text-red-500">*</span>
+          </label>
+          <select
+            {...register("formaPagamento", { setValueAs: (v) => Number(v) })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option
+              value={FormaPagamento.Pix}
+              disabled={tipoPagamento === TipoPagamento.Parcelado}
+            >
+              📱 PIX{" "}
+              {tipoPagamento === TipoPagamento.Parcelado
+                ? "(não disponível para parcelado)"
+                : ""}
+            </option>
+            <option value={FormaPagamento.TED}>🏦 TED</option>
+            <option value={FormaPagamento.Transferencia}>
+              💳 Transferência
+            </option>
+            <option value={FormaPagamento.Boleto}>📄 Boleto</option>
+            <option value={FormaPagamento.CartaoCredito}>
+              💳 Cartão de Crédito
+            </option>
+          </select>
+          {errors.formaPagamento && (
+            <p className="text-sm text-red-600">
+              {errors.formaPagamento.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <label
+            htmlFor="dataFinal"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Data Final <span className="text-red-500">*</span>
+          </label>
+          <input
+            {...register("dataFinal")}
+            type="date"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          {errors.dataFinal && (
+            <p className="text-sm text-red-600">{errors.dataFinal.message}</p>
           )}
         </div>
       </div>

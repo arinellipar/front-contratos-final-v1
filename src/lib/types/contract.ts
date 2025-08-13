@@ -16,6 +16,80 @@ export enum ContractCategory {
 }
 
 /**
+ * Payment type enumeration
+ */
+export enum TipoPagamento {
+  AVista = 1,
+  Parcelado = 2,
+}
+
+/**
+ * Payment method enumeration
+ */
+export enum FormaPagamento {
+  Pix = 1,
+  TED = 2,
+  Transferencia = 3,
+  Boleto = 4,
+  CartaoCredito = 5,
+}
+
+/**
+ * Branch office enumeration
+ */
+export enum Filial {
+  RioDeJaneiro = 1,
+  Campinas = 2,
+  Brasilia = 3,
+  Curitiba = 4,
+  SaoPaulo = 5,
+  Joinville = 6,
+  BeloHorizonte = 7,
+  Salvador = 8,
+  Vitoria = 9,
+  Recife = 10,
+  Manaus = 11,
+  ZonaDaMataMineira = 12,
+  RibeiraoPreto = 13,
+  NovaIorque = 14,
+  Orlando = 15,
+}
+
+/**
+ * Helper functions for enums
+ */
+export const TipoPagamentoDisplay = {
+  [TipoPagamento.AVista]: "À Vista",
+  [TipoPagamento.Parcelado]: "Parcelado",
+} as const;
+
+export const FormaPagamentoDisplay = {
+  [FormaPagamento.Pix]: "PIX",
+  [FormaPagamento.TED]: "TED",
+  [FormaPagamento.Transferencia]: "Transferência",
+  [FormaPagamento.Boleto]: "Boleto",
+  [FormaPagamento.CartaoCredito]: "Cartão de Crédito",
+} as const;
+
+export const FilialDisplay = {
+  [Filial.RioDeJaneiro]: "Rio de Janeiro",
+  [Filial.Campinas]: "Campinas",
+  [Filial.Brasilia]: "Brasília",
+  [Filial.Curitiba]: "Curitiba",
+  [Filial.SaoPaulo]: "São Paulo",
+  [Filial.Joinville]: "Joinville",
+  [Filial.BeloHorizonte]: "Belo Horizonte",
+  [Filial.Salvador]: "Salvador",
+  [Filial.Vitoria]: "Vitória",
+  [Filial.Recife]: "Recife",
+  [Filial.Manaus]: "Manaus",
+  [Filial.ZonaDaMataMineira]: "Zona da Mata Mineira",
+  [Filial.RibeiraoPreto]: "Ribeirão Preto",
+  [Filial.NovaIorque]: "Nova Iorque",
+  [Filial.Orlando]: "Orlando",
+} as const;
+
+/**
  * Base contract interface matching the backend Contract model
  */
 export interface Contract {
@@ -66,8 +140,14 @@ export interface ContractCreateDto {
   multa?: number; // Keep as number for frontend, will be converted to decimal in backend
   avisoPrevia?: number;
   observacoes?: string;
-  filial: string;
-  categoriaContrato: ContractCategory;
+  filial: Filial;
+  categoriaContrato: string;
+  setorResponsavel: string;
+  valorTotalContrato: number;
+  tipoPagamento: TipoPagamento;
+  quantidadeParcelas?: number;
+  formaPagamento: FormaPagamento;
+  dataFinal: string;
   arquivoPdf?: File;
 }
 

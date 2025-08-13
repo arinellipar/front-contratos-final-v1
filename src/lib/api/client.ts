@@ -92,7 +92,6 @@ class ApiClient {
 
     this.client = axios.create({
       baseURL: apiUrl,
-      timeout: 30000,
       headers: {
         "X-Client-Version": process.env.NEXT_PUBLIC_APP_VERSION || "1.0.0",
         "X-Client-Platform": "web",
