@@ -61,6 +61,7 @@ export interface RegisterData {
   password: string;
   confirmPassword: string;
   nomeCompleto: string;
+  filial: number;
   acceptTerms?: boolean;
 
   // Optional additional fields

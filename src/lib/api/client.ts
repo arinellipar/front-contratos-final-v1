@@ -302,9 +302,17 @@ class ApiClient {
       if (axios.isAxiosError(error)) {
         console.error("POST Error Details:", {
           url,
+          fullUrl: `${this.client.defaults.baseURL}${url}`,
           status: error.response?.status,
           data: error.response?.data,
           headers: error.response?.headers,
+          message: error.message,
+          code: error.code,
+          config: {
+            method: error.config?.method,
+            url: error.config?.url,
+            baseURL: error.config?.baseURL,
+          },
         });
       }
       throw error;

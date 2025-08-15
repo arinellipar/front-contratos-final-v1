@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -215,15 +215,21 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [modifiedFields, setModifiedFields] = useState<Set<string>>(new Set());
+  const [originalData, setOriginalData] =
+    useState<Partial<ContractFormData> | null>(null);
   const [valorPorParcela, setValorPorParcela] = useState<string>("");
   const [valorTotalFormatado, setValorTotalFormatado] = useState<string>("");
   const [valorTotalRaw, setValorTotalRaw] = useState<string>("");
+  const [isInitialLoading, setIsInitialLoading] =
+    useState<boolean>(!!contractId);
 
   const {
     register,
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors },
   } = useForm<ContractFormData>({
     resolver: zodResolver(contractSchema),
@@ -241,10 +247,89 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
     },
   });
 
+  // Atualizar formulário quando initialData mudar
+  useEffect(() => {
+    if (initialData) {
+      console.log("🔄 Atualizando formulário com initialData:", initialData);
+
+      // Usar reset para garantir que todos os valores sejam definidos corretamente
+      const formData = {
+        prazo: "30",
+        dataContrato: new Date().toISOString().split("T")[0],
+        dataFinal: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0],
+        categoriaContrato: "Outros",
+        filial: Filial.RioDeJaneiro,
+        tipoPagamento: TipoPagamento.AVista,
+        formaPagamento: FormaPagamento.Pix,
+        ...initialData, // Sobrescreve com dados reais
+      };
+
+      console.log("🔄 Form data para reset:", formData);
+      reset(formData);
+
+      // Inicializar o estado formatado para exibição do valor
+      if (initialData.valorTotalContrato) {
+        const valorEmCentavos = parseRawCents(initialData.valorTotalContrato);
+        if (valorEmCentavos > 0) {
+          const formattedValue = formatCurrency(valorEmCentavos);
+          setValorTotalFormatado(formattedValue);
+          setValorTotalRaw(initialData.valorTotalContrato);
+        }
+
+        console.log(
+          "💰 Valor total definido:",
+          initialData.valorTotalContrato,
+          "-> R$",
+          valorEmCentavos
+        );
+      }
+
+      console.log("💳 Tipo pagamento final:", formData.tipoPagamento);
+      console.log("🏦 Forma pagamento final:", formData.formaPagamento);
+
+      // Salvar dados originais para comparação
+      if (!originalData) {
+        setOriginalData(initialData);
+        console.log("📝 Dados originais salvos:", initialData);
+      }
+
+      // Sinalizar que o carregamento inicial terminou
+      setIsInitialLoading(false);
+    }
+  }, [initialData, reset, originalData]);
+
+  // Função para rastrear modificações nos campos usando useCallback
+  const trackFieldChange = useCallback(
+    (fieldName: string, newValue: any) => {
+      if (!originalData) return;
+
+      const originalValue = originalData[fieldName as keyof ContractFormData];
+      const isModified = newValue !== originalValue;
+
+      setModifiedFields((prev) => {
+        const newSet = new Set(prev);
+        if (isModified) {
+          newSet.add(fieldName);
+        } else {
+          newSet.delete(fieldName);
+        }
+        return newSet;
+      });
+    },
+    [originalData]
+  );
+
   // Observar mudanças no valor total e quantidade de parcelas para calcular valor por parcela
   const valorTotal = watch("valorTotalContrato");
   const quantidadeParcelas = watch("quantidadeParcelas");
   const tipoPagamento = watch("tipoPagamento");
+
+  // Remover o watch global que causava loop infinito
+  // Vamos rastrear mudanças apenas nos campos principais individualmente
+
+  // Rastreamento manual será feito nos handlers específicos quando necessário
 
   useEffect(() => {
     if (valorTotal && quantidadeParcelas) {
@@ -273,6 +358,9 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
 
   // LÓGICA SIMPLES: À vista = 1 parcela, Parcelado = > 1 parcela
   useEffect(() => {
+    // Não interferir durante o carregamento inicial
+    if (isInitialLoading) return;
+
     if (tipoPagamento === TipoPagamento.AVista) {
       // SEMPRE forçar "1" para pagamento à vista
       if (quantidadeParcelas !== "1") {
@@ -287,10 +375,13 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
     ) {
       setValue("quantidadeParcelas", "2");
     }
-  }, [tipoPagamento, quantidadeParcelas, setValue]);
+  }, [tipoPagamento, quantidadeParcelas, setValue, isInitialLoading]);
 
   // Controlar forma de pagamento baseado no tipo de pagamento
   useEffect(() => {
+    // Não interferir durante o carregamento inicial
+    if (isInitialLoading) return;
+
     const formaPagamentoAtual = watch("formaPagamento");
 
     if (formaPagamentoAtual === FormaPagamento.Pix) {
@@ -307,10 +398,13 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
         setValue("quantidadeParcelas", "1");
       }
     }
-  }, [tipoPagamento, setValue, watch, quantidadeParcelas]);
+  }, [tipoPagamento, setValue, watch, quantidadeParcelas, isInitialLoading]);
 
   // Monitorar mudanças na forma de pagamento para bloquear parcelas quando PIX for selecionado
   useEffect(() => {
+    // Não interferir durante o carregamento inicial
+    if (isInitialLoading) return;
+
     const formaPagamentoAtual = watch("formaPagamento");
 
     if (formaPagamentoAtual === FormaPagamento.Pix) {
@@ -318,15 +412,18 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
       setValue("tipoPagamento", TipoPagamento.AVista);
       setValue("quantidadeParcelas", "1");
     }
-  }, [watch("formaPagamento"), setValue]);
+  }, [watch("formaPagamento"), setValue, isInitialLoading]);
 
   // Monitorar mudanças no tipo de pagamento para bloquear/desbloquear campo de parcelas
   useEffect(() => {
+    // Não interferir durante o carregamento inicial
+    if (isInitialLoading) return;
+
     if (tipoPagamento === TipoPagamento.AVista) {
       // Quando mudar para à vista, sempre definir como "1" e bloquear
       setValue("quantidadeParcelas", "1");
     }
-  }, [tipoPagamento, setValue]);
+  }, [tipoPagamento, setValue, isInitialLoading]);
 
   const createMutation = useMutation({
     mutationFn: contractsApi.create,
@@ -377,6 +474,26 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
     data: ContractFormData
   ) => {
     console.log("🔍 Form data before submission:", data);
+    console.log("🔍 Form values from watch:", {
+      filial: watch("filial"),
+      tipoPagamento: watch("tipoPagamento"),
+      formaPagamento: watch("formaPagamento"),
+      valorTotalContrato: watch("valorTotalContrato"),
+    });
+    console.log("🔍 Valores brutos dos campos problemáticos:");
+    console.log("  - data.filial:", data.filial, "type:", typeof data.filial);
+    console.log(
+      "  - data.tipoPagamento:",
+      data.tipoPagamento,
+      "type:",
+      typeof data.tipoPagamento
+    );
+    console.log(
+      "  - data.formaPagamento:",
+      data.formaPagamento,
+      "type:",
+      typeof data.formaPagamento
+    );
     console.log("Arquivo PDF no submit:", selectedFile);
 
     // Validação dos campos obrigatórios
@@ -476,20 +593,63 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
       multa: data.multa ? Number(data.multa) : undefined,
       avisoPrevia: data.avisoPrevia ? Number(data.avisoPrevia) : undefined,
       observacoes: data.observacoes?.trim(),
-      filial: data.filial,
+      filial: data.filial || Filial.RioDeJaneiro, // setValueAs já converte para number
       categoriaContrato: data.categoriaContrato.trim(),
       setorResponsavel: data.setorResponsavel.trim(),
       valorTotalContrato: parseRawCents(data.valorTotalContrato),
-      tipoPagamento: data.tipoPagamento,
+      tipoPagamento: data.tipoPagamento || TipoPagamento.AVista, // setValueAs já converte para number
       quantidadeParcelas: data.quantidadeParcelas
         ? Number(data.quantidadeParcelas)
         : undefined,
-      formaPagamento: data.formaPagamento,
+      formaPagamento: data.formaPagamento || FormaPagamento.Pix, // setValueAs já converte para number
       dataFinal: data.dataFinal,
       arquivoPdf: selectedFile || undefined, // Garante que o arquivo vá para o backend
     };
 
     console.log("🔍 Submit data after processing:", submitData);
+    console.log("📋 Campos críticos com valores forçados:");
+    console.log(
+      "  - valorTotalContrato raw:",
+      data.valorTotalContrato,
+      "-> parsed:",
+      submitData.valorTotalContrato
+    );
+    console.log(
+      "  - filial:",
+      data.filial,
+      "type:",
+      typeof data.filial,
+      "-> submitData:",
+      submitData.filial,
+      "type:",
+      typeof submitData.filial,
+      "forçado?",
+      !data.filial ? "SIM" : "NÃO"
+    );
+    console.log(
+      "  - tipoPagamento:",
+      data.tipoPagamento,
+      "type:",
+      typeof data.tipoPagamento,
+      "-> submitData:",
+      submitData.tipoPagamento,
+      "type:",
+      typeof submitData.tipoPagamento,
+      "forçado?",
+      !data.tipoPagamento ? "SIM" : "NÃO"
+    );
+    console.log(
+      "  - formaPagamento:",
+      data.formaPagamento,
+      "type:",
+      typeof data.formaPagamento,
+      "-> submitData:",
+      submitData.formaPagamento,
+      "type:",
+      typeof submitData.formaPagamento,
+      "forçado?",
+      !data.formaPagamento ? "SIM" : "NÃO"
+    );
     console.log("📋 Validação dos dados:");
     console.log(
       `  - Contrato: "${submitData.contrato}" (${submitData.contrato.length} chars)`
@@ -528,6 +688,12 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
     try {
       if (contractId) {
         // Atualizando contrato existente
+        // Simplificado: enviar todos os dados na edição por enquanto
+        // TODO: Implementar rastreamento de mudanças de forma mais estável
+        console.log("🔄 Atualizando contrato com todos os dados:", submitData);
+        console.log("🔄 Especificamente os campos problemáticos:");
+        console.log("  - tipoPagamento enviado:", submitData.tipoPagamento);
+        console.log("  - formaPagamento enviado:", submitData.formaPagamento);
         updateMutation.mutate({ id: contractId, data: submitData });
       } else {
         // Criando novo contrato
@@ -610,10 +776,35 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
     }
   };
 
+  // Função para obter classes CSS para campos modificados
+  const getFieldClassName = (fieldName: string, baseClassName: string) => {
+    const isModified = modifiedFields.has(fieldName);
+    return `${baseClassName} ${
+      isModified
+        ? "border-orange-500 bg-orange-50 ring-orange-500 focus:border-orange-500 focus:ring-orange-500"
+        : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+    }`;
+  };
+
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {/* Indicador simplificado */}
+      {contractId && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-blue-900">Modo Edição</h3>
+              <p className="text-sm text-blue-700">
+                Editando contrato existente. Apenas campos alterados serão
+                atualizados.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Contrato Text Area */}
       <div className="space-y-2">
         <label
@@ -806,7 +997,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
             Filial <span className="text-red-500">*</span>
           </label>
           <select
-            {...register("filial")}
+            {...register("filial", { setValueAs: (v) => Number(v) })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value={Filial.RioDeJaneiro}>🏢 Rio de Janeiro</option>

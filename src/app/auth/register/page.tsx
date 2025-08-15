@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
+import { Filial, FilialDisplay } from "@/lib/types/contract";
 
 // Simplified registration validation
 const registerSchema = z
@@ -43,6 +44,7 @@ const registerSchema = z
       .max(320, "Email muito longo"),
     password: z.string().min(1, "Senha é obrigatória"),
     confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
+    filial: z.number().min(1, "Filial é obrigatória"),
     acceptTerms: z.boolean(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -150,7 +152,8 @@ export default function RegisterPage() {
         !data.email ||
         !data.password ||
         !data.confirmPassword ||
-        !data.nomeCompleto
+        !data.nomeCompleto ||
+        !data.filial
       ) {
         toast.error("Todos os campos são obrigatórios");
         return;
@@ -210,11 +213,20 @@ export default function RegisterPage() {
       setIsLoading(true);
 
       try {
+        console.log("🚀 Enviando dados para registro:", {
+          email: cleanData.email,
+          nomeCompleto: cleanData.nomeCompleto,
+          filial: cleanData.filial,
+          acceptTerms: cleanData.acceptTerms,
+          // password omitida por segurança
+        });
+
         await authApi.register({
           email: cleanData.email,
           password: cleanData.password,
           confirmPassword: cleanData.confirmPassword,
           nomeCompleto: cleanData.nomeCompleto,
+          filial: cleanData.filial,
           acceptTerms: cleanData.acceptTerms,
         });
 
@@ -225,11 +237,31 @@ export default function RegisterPage() {
         // Redirect to login with success message
         router.push("/login?message=registration_success");
       } catch (error: any) {
-        console.error("Registration error:", error);
+        console.error("❌ Erro completo no registro:", {
+          error,
+          message: error?.message,
+          response: error?.response,
+          status: error?.response?.status,
+          data: error?.response?.data,
+          stack: error?.stack,
+        });
 
-        const errorMessage =
-          error.response?.data?.message ||
-          "Erro ao criar conta. Tente novamente.";
+        let errorMessage = "Erro ao criar conta. Tente novamente.";
+
+        if (error?.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error?.message) {
+          // Melhorar mensagens de erro comuns
+          if (error.message.includes("User with this email already exists")) {
+            errorMessage =
+              "Este email já está cadastrado. Tente fazer login ou use outro email.";
+          } else if (error.message.includes("HTTP 400")) {
+            errorMessage =
+              "Dados inválidos. Verifique as informações e tente novamente.";
+          } else {
+            errorMessage = error.message;
+          }
+        }
 
         toast.error(errorMessage);
       } finally {
@@ -309,6 +341,33 @@ export default function RegisterPage() {
                   <p className="text-sm text-red-600 flex items-center gap-1">
                     <AlertCircle className="w-4 h-4" />
                     {errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Filial */}
+              <div className="space-y-2">
+                <Label htmlFor="filial">Filial</Label>
+                <select
+                  {...register("filial", { setValueAs: (v) => Number(v) })}
+                  id="filial"
+                  className={cn(
+                    "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                    errors.filial && "border-red-300"
+                  )}
+                  disabled={isLoading}
+                >
+                  <option value="">Selecione uma filial</option>
+                  {Object.entries(FilialDisplay).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                {errors.filial && (
+                  <p className="text-sm text-red-600 flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    {errors.filial.message}
                   </p>
                 )}
               </div>

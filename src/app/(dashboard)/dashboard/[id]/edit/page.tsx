@@ -96,10 +96,12 @@ export default function EditContractPage() {
     filial: contractData.filial || contract.filial || 1,
     categoriaContrato: contract.categoriaContrato,
     setorResponsavel: contractData.setorResponsavel || "",
-    valorTotalContrato: contractData.valorTotalContrato?.toString() || "",
-    tipoPagamento: contractData.tipoPagamento || 1,
+    valorTotalContrato: contractData.valorTotalContrato
+      ? Math.round(contractData.valorTotalContrato * 100).toString()
+      : "",
+    tipoPagamento: contractData.tipoPagamento || contract.tipoPagamento || 1,
     quantidadeParcelas: contractData.quantidadeParcelas?.toString(),
-    formaPagamento: contractData.formaPagamento || 1,
+    formaPagamento: contractData.formaPagamento || contract.formaPagamento || 1,
     dataFinal: contractData.dataFinal
       ? new Date(contractData.dataFinal).toISOString().split("T")[0]
       : new Date(
@@ -111,6 +113,25 @@ export default function EditContractPage() {
   };
 
   console.log("📝 Initial data formatted for form:", initialData);
+  console.log("🔍 Campos específicos check:");
+  console.log(
+    "  - valorTotalContrato:",
+    contractData.valorTotalContrato,
+    "->",
+    initialData.valorTotalContrato
+  );
+  console.log(
+    "  - tipoPagamento:",
+    contractData.tipoPagamento,
+    "->",
+    initialData.tipoPagamento
+  );
+  console.log(
+    "  - formaPagamento:",
+    contractData.formaPagamento,
+    "->",
+    initialData.formaPagamento
+  );
 
   return (
     <div className="space-y-6">

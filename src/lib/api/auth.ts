@@ -86,6 +86,7 @@ export const authApi = {
         password: cleanPassword,
         confirmPassword: cleanConfirmPassword,
         nomeCompleto: registerPayload.nomeCompleto,
+        filial: registerPayload.filial,
       };
 
       // Log para debugging (remover em produção)
@@ -125,7 +126,9 @@ export const authApi = {
         }
 
         if (apiError?.message?.includes("User registration failed")) {
-          throw new Error("Falha no registro. Verifique os dados e tente novamente.");
+          throw new Error(
+            "Falha no registro. Verifique os dados e tente novamente."
+          );
         }
 
         if (apiError?.errors) {

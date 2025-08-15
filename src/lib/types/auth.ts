@@ -32,6 +32,7 @@ export interface RegisterData {
   readonly password: string;
   readonly confirmPassword: string;
   readonly nomeCompleto: string;
+  readonly filial: number;
   readonly acceptTerms: boolean;
   readonly marketingConsent?: boolean;
   readonly referralCode?: string;
