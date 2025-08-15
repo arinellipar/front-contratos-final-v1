@@ -1,322 +1,138 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-
-// Define the ContractFormData interface with proper types
-interface ContractFormData {
-  contrato: string;
-  contratante: string;
-  contratada: string;
-  objeto: string;
-  dataContrato: string;
-  prazo: string; // This should be string for form inputs
-  rescisao?: string;
-  multa?: string;
-  avisoPrevia?: string;
-  observacoes?: string;
-  filial: string;
-  categoriaContrato: any;
-}
+import { useParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { contractsApi } from "@/lib/api/contracts";
+import { PageHeader } from "@/components/layout/Pageheader";
+import { ContractForm } from "@/components/contracts/ContractForm";
+import { Card, CardContent } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 
 export default function EditContractPage() {
   const params = useParams();
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState<ContractFormData>({
-    contrato: "",
-    contratante: "",
-    contratada: "",
-    objeto: "",
-    dataContrato: "",
-    prazo: "",
-    rescisao: "",
-    multa: "",
-    avisoPrevia: "",
-    observacoes: "",
-    filial: "",
-    categoriaContrato: null,
+  const contractId = parseInt(params.id as string);
+
+  const {
+    data: contract,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["contract", contractId],
+    queryFn: () => contractsApi.getById(contractId),
+    enabled: !!contractId && !isNaN(contractId),
   });
 
-  useEffect(() => {
-    // Fetch contract data
-    fetchContractData();
-  }, [params.id]);
-
-  const fetchContractData = async () => {
-    try {
-      const response = await fetch(`/api/contracts/${params.id}`);
-      if (!response.ok) throw new Error("Failed to fetch contract");
-
-      const data = await response.json();
-
-      // Convert numeric values to strings for form inputs
-      const formattedData: Partial<ContractFormData> = {
-        contrato: data.contrato,
-        contratante: data.contratante,
-        contratada: data.contratada,
-        objeto: data.objeto,
-        dataContrato: data.dataContrato,
-        prazo: data.prazo?.toString() || "", // Convert number to string
-        rescisao: data.rescisao?.toString() || "",
-        multa: data.multa?.toString() || "",
-        avisoPrevia: data.avisoPrevia?.toString() || "",
-        observacoes: data.observacoes || "",
-        filial: data.filial,
-        categoriaContrato: data.categoriaContrato,
-      };
-
-      setFormData(formattedData as ContractFormData);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching contract:", error);
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      // Convert string values back to numbers for the API
-      const apiData = {
-        ...formData,
-        prazo: parseInt(formData.prazo) || 0,
-        rescisao: formData.rescisao ? parseInt(formData.rescisao) : undefined,
-        multa: formData.multa ? parseFloat(formData.multa) : undefined,
-        avisoPrevia: formData.avisoPrevia
-          ? parseInt(formData.avisoPrevia)
-          : undefined,
-      };
-
-      const response = await fetch(`/api/contracts/${params.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(apiData),
-      });
-
-      if (!response.ok) throw new Error("Failed to update contract");
-
-      router.push("/dashboard/contracts");
-    } catch (error) {
-      console.error("Error updating contract:", error);
-    }
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  if (loading) {
-    return <div>Loading...</div>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
   }
 
+  if (error || !contract) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Erro"
+          description="Não foi possível carregar o contrato"
+        />
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-red-600">
+              Contrato não encontrado ou erro ao carregar dados.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Convert contract data to form format
+  const contractData = contract as any;
+  console.log("🔍 Contract data received for editing:", contractData);
+  console.log(
+    "🔍 Raw filial value:",
+    contractData.filial,
+    "type:",
+    typeof contractData.filial
+  );
+  console.log(
+    "🔍 Raw tipoPagamento value:",
+    contractData.tipoPagamento,
+    "type:",
+    typeof contractData.tipoPagamento
+  );
+  console.log(
+    "🔍 Raw formaPagamento value:",
+    contractData.formaPagamento,
+    "type:",
+    typeof contractData.formaPagamento
+  );
+
+  // Helper function to safely parse numbers
+  const parseToNumber = (value: any, fallback: number): number => {
+    if (typeof value === "number" && !isNaN(value)) {
+      return value;
+    }
+    if (typeof value === "string" && value.trim() !== "") {
+      const parsed = parseInt(value, 10);
+      return !isNaN(parsed) ? parsed : fallback;
+    }
+    return fallback;
+  };
+
+  const initialData = {
+    contrato: contract.contrato,
+    contratante: contract.contratante,
+    contratada: contract.contratada,
+    objeto: contract.objeto,
+    dataContrato: new Date(contract.dataContrato).toISOString().split("T")[0],
+    prazo: contract.prazo.toString(),
+    rescisao: contract.rescisao?.toString(),
+    multa: contract.multa?.toString(),
+    avisoPrevia: contract.avisoPrevia?.toString(),
+    observacoes: contract.observacoes,
+    filial: contractData.filial || contract.filial || 1,
+    categoriaContrato: contract.categoriaContrato,
+    setorResponsavel: contractData.setorResponsavel || "",
+    valorTotalContrato: contractData.valorTotalContrato?.toString() || "",
+    tipoPagamento: contractData.tipoPagamento || 1,
+    quantidadeParcelas: contractData.quantidadeParcelas?.toString(),
+    formaPagamento: contractData.formaPagamento || 1,
+    dataFinal: contractData.dataFinal
+      ? new Date(contractData.dataFinal).toISOString().split("T")[0]
+      : new Date(
+          new Date(contract.dataContrato).getTime() +
+            contract.prazo * 24 * 60 * 60 * 1000
+        )
+          .toISOString()
+          .split("T")[0],
+  };
+
+  console.log("📝 Initial data formatted for form:", initialData);
+
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Edit Contract</h1>
+    <div className="space-y-6">
+      <PageHeader
+        title={`Editar Contrato #${contract.id}`}
+        description={`${contract.contratante} - ${contract.objeto}`}
+        breadcrumbs={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Contratos", href: "/dashboard" },
+          {
+            label: `Contrato #${contract.id}`,
+            href: `/dashboard/${contract.id}`,
+          },
+          { label: "Editar" },
+        ]}
+      />
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="contrato" className="block text-sm font-medium mb-1">
-            Contract Number
-          </label>
-          <input
-            type="text"
-            id="contrato"
-            name="contrato"
-            value={formData.contrato}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border rounded-md"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="contratante"
-            className="block text-sm font-medium mb-1"
-          >
-            Contractor
-          </label>
-          <input
-            type="text"
-            id="contratante"
-            name="contratante"
-            value={formData.contratante}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border rounded-md"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="contratada"
-            className="block text-sm font-medium mb-1"
-          >
-            Contracted Party
-          </label>
-          <input
-            type="text"
-            id="contratada"
-            name="contratada"
-            value={formData.contratada}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border rounded-md"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="objeto" className="block text-sm font-medium mb-1">
-            Object
-          </label>
-          <textarea
-            id="objeto"
-            name="objeto"
-            value={formData.objeto}
-            onChange={handleChange}
-            required
-            rows={3}
-            className="w-full px-3 py-2 border rounded-md"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="dataContrato"
-            className="block text-sm font-medium mb-1"
-          >
-            Contract Date
-          </label>
-          <input
-            type="date"
-            id="dataContrato"
-            name="dataContrato"
-            value={formData.dataContrato}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border rounded-md"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="prazo" className="block text-sm font-medium mb-1">
-            Term (days)
-          </label>
-          <input
-            type="number"
-            id="prazo"
-            name="prazo"
-            value={formData.prazo}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border rounded-md"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="rescisao" className="block text-sm font-medium mb-1">
-            Termination (days)
-          </label>
-          <input
-            type="number"
-            id="rescisao"
-            name="rescisao"
-            value={formData.rescisao}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border rounded-md"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="multa" className="block text-sm font-medium mb-1">
-            Fine (%)
-          </label>
-          <input
-            type="number"
-            id="multa"
-            name="multa"
-            value={formData.multa}
-            onChange={handleChange}
-            step="0.01"
-            className="w-full px-3 py-2 border rounded-md"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="avisoPrevia"
-            className="block text-sm font-medium mb-1"
-          >
-            Prior Notice (days)
-          </label>
-          <input
-            type="number"
-            id="avisoPrevia"
-            name="avisoPrevia"
-            value={formData.avisoPrevia}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border rounded-md"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="observacoes"
-            className="block text-sm font-medium mb-1"
-          >
-            Observations
-          </label>
-          <textarea
-            id="observacoes"
-            name="observacoes"
-            value={formData.observacoes}
-            onChange={handleChange}
-            rows={3}
-            className="w-full px-3 py-2 border rounded-md"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="filial" className="block text-sm font-medium mb-1">
-            Branch
-          </label>
-          <input
-            type="text"
-            id="filial"
-            name="filial"
-            value={formData.filial}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border rounded-md"
-          />
-        </div>
-
-        <div className="flex gap-4 pt-4">
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            Save Changes
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard/contracts")}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+      <Card>
+        <CardContent className="p-6">
+          <ContractForm initialData={initialData} contractId={contractId} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

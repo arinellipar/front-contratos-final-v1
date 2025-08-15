@@ -310,7 +310,7 @@ export function ContractTable({
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          router.push(`/contracts/${contract.id}/edit`);
+                          router.push(`/dashboard/${contract.id}/edit`);
                         }}
                         className="text-blue-600 hover:text-blue-700"
                         title="Editar contrato"

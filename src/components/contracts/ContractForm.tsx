@@ -133,7 +133,14 @@ const contractSchema = z.object({
       }
     ),
   observacoes: z.string().max(2000).optional(),
-  filial: z.nativeEnum(Filial),
+  filial: z.any().transform((val) => {
+    if (typeof val === "number") return val;
+    if (typeof val === "string") {
+      const num = parseInt(val, 10);
+      return !isNaN(num) ? num : 1;
+    }
+    return 1;
+  }),
   categoriaContrato: z
     .string()
     .min(1, "Categoria do contrato é obrigatória")
@@ -148,7 +155,14 @@ const contractSchema = z.object({
     .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
       message: "O valor total deve ser maior que zero",
     }),
-  tipoPagamento: z.nativeEnum(TipoPagamento),
+  tipoPagamento: z.any().transform((val) => {
+    if (typeof val === "number") return val;
+    if (typeof val === "string") {
+      const num = parseInt(val, 10);
+      return !isNaN(num) ? num : 1;
+    }
+    return 1;
+  }),
   quantidadeParcelas: z
     .string()
     .optional()
@@ -159,7 +173,14 @@ const contractSchema = z.object({
         message: "A quantidade de parcelas deve ser entre 1 e 60",
       }
     ),
-  formaPagamento: z.nativeEnum(FormaPagamento),
+  formaPagamento: z.any().transform((val) => {
+    if (typeof val === "number") return val;
+    if (typeof val === "string") {
+      const num = parseInt(val, 10);
+      return !isNaN(num) ? num : 1;
+    }
+    return 1;
+  }),
   dataFinal: z.string().min(1, "Data final é obrigatória"),
 });
 
@@ -174,13 +195,13 @@ type ContractFormData = {
   multa?: string;
   avisoPrevia?: string;
   observacoes?: string;
-  filial: Filial;
+  filial: Filial | number;
   categoriaContrato: string;
   setorResponsavel: string;
   valorTotalContrato: string;
-  tipoPagamento: TipoPagamento;
+  tipoPagamento: TipoPagamento | number;
   quantidadeParcelas?: string;
-  formaPagamento: FormaPagamento;
+  formaPagamento: FormaPagamento | number;
   dataFinal: string;
   arquivoPdf?: File;
 };
@@ -605,7 +626,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
           {...register("contrato")}
           rows={4}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="Digite o texto completo do contrato..."
+          placeholder="Digite o título do contrato"
         />
         {errors.contrato && (
           <p className="text-sm text-red-600">{errors.contrato.message}</p>
