@@ -1133,7 +1133,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
             </p>
           )}
           <p className="text-xs text-gray-500 mt-1">
-            💡 Selecionar PIX automaticamente define o tipo como "À Vista"
+            💡 Selecionar PIX automaticamente define o tipo como "À Vista".
           </p>
         </div>
 
