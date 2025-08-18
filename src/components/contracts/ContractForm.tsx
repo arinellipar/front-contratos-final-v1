@@ -1279,6 +1279,72 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
         </div>
       </div>
 
+      {/* Em caso de Rescisão: Multa e Aviso Prévio */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div className="col-span-1 md:col-span-1 flex items-center h-full">
+          <span className="block text-sm font-medium text-gray-700">
+            Em caso de Rescisão
+          </span>
+        </div>
+        <div className="space-y-2">
+          <label
+            htmlFor="multa"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Multa (R$)
+          </label>
+          <input
+            {...register("multa")}
+            type="number"
+            step="0.01"
+            min="0"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Ex: 1500.00"
+          />
+          {errors.multa && (
+            <p className="text-sm text-red-600">{errors.multa.message}</p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <label
+            htmlFor="avisoPrevia"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Aviso Prévio (em dias)
+          </label>
+          <select
+            {...register("avisoPrevia")}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            defaultValue=""
+          >
+            <option value="">Selecione</option>
+            <option value="30">30</option>
+            <option value="60">60</option>
+            <option value="90">90</option>
+            <option value="120">120</option>
+          </select>
+          {errors.avisoPrevia && (
+            <p className="text-sm text-red-600">{errors.avisoPrevia.message}</p>
+          )}
+        </div>
+        {/*
+        <div className="space-y-2">
+          <label htmlFor="rescisao" className="block text-sm font-medium text-gray-700">Rescisão (em dias)</label>
+          <input
+            {...register("rescisao")}
+            type="number"
+            min="0"
+            max="3650"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Ex: 30"
+          />
+          {errors.rescisao && (
+            <p className="text-sm text-red-600">{errors.rescisao.message}</p>
+          )}
+        </div>
+        */}
+      </div>
+
       {/* Observações */}
       <div className="space-y-2">
         <label
