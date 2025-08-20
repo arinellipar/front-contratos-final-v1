@@ -924,69 +924,6 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
         </div>
       </div>
 
-      {/* Financial Details */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="space-y-2">
-          <label
-            htmlFor="rescisao"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Rescisão (em dias)
-          </label>
-          <input
-            {...register("rescisao")}
-            type="number"
-            min="0"
-            max="3650"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Ex: 30"
-          />
-          {errors.rescisao && (
-            <p className="text-sm text-red-600">{errors.rescisao.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <label
-            htmlFor="multa"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Multa (R$)
-          </label>
-          <input
-            {...register("multa")}
-            type="number"
-            step="0.01"
-            min="0"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Ex: 1500.00"
-          />
-          {errors.multa && (
-            <p className="text-sm text-red-600">{errors.multa.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <label
-            htmlFor="avisoPrevia"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Aviso Prévio (em dias)
-          </label>
-          <input
-            {...register("avisoPrevia")}
-            type="number"
-            min="0"
-            max="365"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Ex: 30"
-          />
-          {errors.avisoPrevia && (
-            <p className="text-sm text-red-600">{errors.avisoPrevia.message}</p>
-          )}
-        </div>
-      </div>
-
       {/* Filial, Category and Sector */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
