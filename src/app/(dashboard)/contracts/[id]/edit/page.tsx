@@ -49,38 +49,6 @@ export default function EditContractPage() {
   }
 
   // Convert contract data to form format
-  const contractData = contract as any;
-  console.log("🔍 Contract data received for editing:", contractData);
-  console.log(
-    "🔍 Raw filial value:",
-    contractData.filial,
-    "type:",
-    typeof contractData.filial
-  );
-  console.log(
-    "🔍 Raw tipoPagamento value:",
-    contractData.tipoPagamento,
-    "type:",
-    typeof contractData.tipoPagamento
-  );
-  console.log(
-    "🔍 Raw formaPagamento value:",
-    contractData.formaPagamento,
-    "type:",
-    typeof contractData.formaPagamento
-  );
-
-  // Helper function to safely parse numbers
-  const parseToNumber = (value: any, fallback: number): number => {
-    if (typeof value === "number" && !isNaN(value)) {
-      return value;
-    }
-    if (typeof value === "string" && value.trim() !== "") {
-      const parsed = parseInt(value, 10);
-      return !isNaN(parsed) ? parsed : fallback;
-    }
-    return fallback;
-  };
 
   const initialData = {
     contrato: contract.contrato,
@@ -93,17 +61,17 @@ export default function EditContractPage() {
     multa: contract.multa?.toString(),
     avisoPrevia: contract.avisoPrevia?.toString(),
     observacoes: contract.observacoes,
-    filial: contractData.filial || contract.filial || 1,
+    filial: contract.filial || 1,
     categoriaContrato: contract.categoriaContrato,
-    setorResponsavel: contractData.setorResponsavel || "",
-    valorTotalContrato: contractData.valorTotalContrato
-      ? Math.round(contractData.valorTotalContrato * 100).toString()
+    setorResponsavel: contract.setorResponsavel || "",
+    valorTotalContrato: contract.valorTotalContrato
+      ? Math.round(contract.valorTotalContrato * 100).toString()
       : "",
-    tipoPagamento: contractData.tipoPagamento || contract.tipoPagamento || 1,
-    quantidadeParcelas: contractData.quantidadeParcelas?.toString(),
-    formaPagamento: contractData.formaPagamento || contract.formaPagamento || 1,
-    dataFinal: contractData.dataFinal
-      ? new Date(contractData.dataFinal).toISOString().split("T")[0]
+    tipoPagamento: contract.tipoPagamento || 1,
+    quantidadeParcelas: contract.quantidadeParcelas?.toString(),
+    formaPagamento: contract.formaPagamento || 1,
+    dataFinal: contract.dataFinal
+      ? new Date(contract.dataFinal).toISOString().split("T")[0]
       : new Date(
           new Date(contract.dataContrato).getTime() +
             contract.prazo * 24 * 60 * 60 * 1000
@@ -111,8 +79,6 @@ export default function EditContractPage() {
           .toISOString()
           .split("T")[0],
   };
-
-  console.log("📝 Initial data formatted for form:", initialData);
 
   return (
     <div className="space-y-6">

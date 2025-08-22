@@ -106,11 +106,19 @@ export interface Contract {
   multa?: number;
   avisoPrevia?: number;
   observacoes?: string;
-  filial: string;
+  filial: Filial | string;
   categoriaContrato: string;
   dataCriacao: string; // ISO date string
   dataAtualizacao?: string; // ISO date string
   userId: string;
+
+  // New fields from backend
+  setorResponsavel?: string;
+  valorTotalContrato?: number;
+  tipoPagamento?: TipoPagamento;
+  quantidadeParcelas?: number;
+  formaPagamento?: FormaPagamento;
+  dataFinal?: string;
 
   // File-related properties
   arquivoPdfCaminho?: string;

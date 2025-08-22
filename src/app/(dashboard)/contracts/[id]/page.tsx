@@ -86,7 +86,7 @@ enum ContractStatus {
 /**
  * Extended contract interface with computed properties
  */
-interface ExtendedContract extends Omit<Contract, 'status'> {
+interface ExtendedContract extends Omit<Contract, "status"> {
   status: ContractStatus;
   daysRemaining: number;
   expiryDate: Date;
@@ -150,11 +150,28 @@ export default function ContractDetailPage() {
 
       const baseContract = await contractsApi.getById(contractId);
 
-      // Calculate derived properties
+      // Calculate derived properties with date validation
+      const contractStartDate = new Date(baseContract.dataContrato);
+
+      // Validate contract start date
+      if (isNaN(contractStartDate.getTime())) {
+        throw new Error(
+          `Invalid contract start date: ${baseContract.dataContrato}`
+        );
+      }
+
       const expiryDate = addDays(
-        new Date(baseContract.dataContrato),
+        contractStartDate,
         baseContract.prazo || 365 // Default to 365 days if prazo is not defined
       );
+
+      // Validate expiry date
+      if (isNaN(expiryDate.getTime())) {
+        throw new Error(
+          `Invalid expiry date calculated from start date: ${baseContract.dataContrato} and prazo: ${baseContract.prazo}`
+        );
+      }
+
       const daysRemaining = differenceInDays(expiryDate, new Date());
       const isExpired = daysRemaining < 0;
       const isExpiringSoon = daysRemaining <= 30 && daysRemaining >= 0;
@@ -909,9 +926,12 @@ export default function ContractDetailPage() {
                     Vencimento
                   </label>
                   <p className="font-medium">
-                    {format(contract.expiryDate, "dd 'de' MMMM 'de' yyyy", {
-                      locale: ptBR,
-                    })}
+                    {contract.expiryDate &&
+                    !isNaN(contract.expiryDate.getTime())
+                      ? format(contract.expiryDate, "dd 'de' MMMM 'de' yyyy", {
+                          locale: ptBR,
+                        })
+                      : "Data inválida"}
                   </p>
                   {contract.daysRemaining > 0 ? (
                     <p className="text-sm text-gray-500">

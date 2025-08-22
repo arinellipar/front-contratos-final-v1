@@ -227,17 +227,19 @@ function LoginPageContent() {
 
         if (result?.ok) {
           // Aguardar um pouco para a sessão ser criada
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
           const session = await getSession();
 
           if (!session?.user) {
-            console.log("⚠️ Session not found, but login was successful. Retrying...");
-            
+            console.log(
+              "⚠️ Session not found, but login was successful. Retrying..."
+            );
+
             // Tentar novamente após mais tempo
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise((resolve) => setTimeout(resolve, 2000));
             const retrySession = await getSession();
-            
+
             if (!retrySession?.user) {
               throw new Error(
                 "Session creation failed after successful authentication"
@@ -246,7 +248,10 @@ function LoginPageContent() {
           }
 
           setLoginStep("success");
-          console.log("✅ Login successful, session created for:", session?.user?.email);
+          console.log(
+            "✅ Login successful, session created for:",
+            session?.user?.email
+          );
 
           // Delay for success animation
           setTimeout(() => {

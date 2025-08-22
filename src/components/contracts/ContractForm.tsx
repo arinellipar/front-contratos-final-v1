@@ -201,7 +201,7 @@ const formatCentsAsCurrency = (cents: number): string => {
 const contractSchema = z.object({
   contrato: z
     .string()
-    .min(10, "O contrato deve ter pelo menos 10 caracteres")
+    .min(2, "O contrato deve ter pelo menos 2 caracteres")
     .max(1000, "O contrato deve ter no máximo 1000 caracteres"),
   contratante: z
     .string()
@@ -213,8 +213,8 @@ const contractSchema = z.object({
     .max(200, "O nome da contratada deve ter no máximo 200 caracteres"),
   objeto: z
     .string()
-    .min(10, "O objeto deve ter pelo menos 10 caracteres")
-    .max(2000, "O objeto deve ter no máximo 2000 caracteres"),
+    .min(2, "O objeto deve ter pelo menos 2 caracteres")
+    .max(1000, "O objeto deve ter no máximo 1000 caracteres"),
   dataContrato: z.string().min(1, "Data do contrato é obrigatória"),
   prazo: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
     message: "O prazo deve ser um número positivo",
