@@ -65,6 +65,8 @@ export default function EditContractPage() {
   };
 
   // Convert contract data to form format
+  console.log("🔴🔴🔴 CONTRACT DATA FROM API:", contract);
+  console.log("🔴🔴🔴 MULTA FROM API:", contract.multa);
 
   const initialData = {
     contrato: contract.contrato,

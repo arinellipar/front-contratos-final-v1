@@ -71,6 +71,7 @@ import {
   formatCurrency,
   formatDate,
   formatPercentage,
+  formatRelativeTime,
 } from "@/lib/utils/formatters";
 import { cn } from "@/lib/utils";
 import { getDynamicFontSize } from "@/lib/utils/responsiveText";
@@ -109,12 +110,22 @@ export default function ModernDashboardPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("month");
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
   const [dateRange, setDateRange] = useState({
     start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0],
     end: new Date().toISOString().split("T")[0],
   });
+
+  // Hook para atualizar timestamps em tempo real
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLastUpdateTime(new Date());
+    }, 10000); // Atualiza a cada 10 segundos para timestamps relativos
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleRefresh = async () => {
     await Promise.all([
@@ -190,9 +201,9 @@ export default function ModernDashboardPage() {
       dateRange,
     ],
     queryFn: () => contractsApi.getDashboardMetrics(),
-    refetchInterval: 30000, // Auto-refresh every 30 seconds
-    refetchIntervalInBackground: false, // Não refetcha com aba inativa
-    staleTime: 10000, // Dados ficam fresh por 10 segundos
+    refetchInterval: 30000, // Auto-refresh every 30 seconds for real-time activity
+    refetchIntervalInBackground: false, // Não refetcha com aba inativa para economia de recursos
+    staleTime: 15000, // Dados ficam fresh por 15 segundos
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
@@ -261,7 +272,7 @@ export default function ModernDashboardPage() {
               type: "created" as const,
               contractName: `${contract.contratante} - ${contract.objeto}`,
               timestamp: contract.dataCriacao,
-              value: contract.multa || 0,
+              value: contract.valorTotalContrato || 0,
             }))
           );
         }
@@ -278,7 +289,7 @@ export default function ModernDashboardPage() {
                   new Date(contract.dataContrato).getTime() +
                     contract.prazo * 24 * 60 * 60 * 1000
                 ).toISOString(),
-                value: contract.multa || 0,
+                value: contract.valorTotalContrato || 0,
               }))
           );
         }
@@ -1543,17 +1554,41 @@ export default function ModernDashboardPage() {
               <CardTitle className="flex items-center gap-2 text-gray-900">
                 <Activity className="h-5 w-5" />
                 Atividade Recente
+                <div className="flex items-center gap-1 ml-auto">
+                  <div
+                    className={cn(
+                      "w-2 h-2 rounded-full",
+                      isRefetchingDashboard
+                        ? "bg-blue-500 animate-spin"
+                        : "bg-green-500 animate-pulse"
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      "text-xs font-medium",
+                      isRefetchingDashboard ? "text-blue-600" : "text-green-600"
+                    )}
+                  >
+                    {isRefetchingDashboard ? "ATUALIZANDO..." : "TEMPO REAL"}
+                  </span>
+                </div>
               </CardTitle>
               <CardDescription>
-                Últimos contratos adicionados ao sistema
+                Últimos contratos adicionados ao sistema • Atualização
+                automática a cada 30s
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {dashboardData.recentActivity.map((activity) => (
+                {dashboardData.recentActivity.map((activity, index) => (
                   <div
                     key={activity.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    className={cn(
+                      "flex items-center justify-between p-3 rounded-lg transition-all duration-500",
+                      index === 0 && isRefetchingDashboard
+                        ? "bg-blue-50 border border-blue-200 shadow-md"
+                        : "bg-gray-50 hover:bg-gray-100"
+                    )}
                   >
                     <div className="flex items-center gap-3">
                       <div
@@ -1571,7 +1606,7 @@ export default function ModernDashboardPage() {
                           {activity.contractName}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {formatDate(activity.timestamp)}
+                          {formatRelativeTime(activity.timestamp)}
                         </p>
                       </div>
                     </div>

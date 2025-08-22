@@ -61,6 +61,12 @@ import {
   Info,
   BarChart3,
   ArrowLeft,
+  Users,
+  Target,
+  CreditCard,
+  TrendingUp,
+  Shield,
+  Briefcase,
 } from "lucide-react";
 import {
   formatDate,
@@ -72,6 +78,42 @@ import toast from "react-hot-toast";
 import { saveAs } from "file-saver";
 import { format, differenceInDays, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { motion } from "framer-motion";
+
+// Modern 2025 animation variants
+const pageVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: [0.16, 1, 0.3, 1],
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.5,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+  hover: {
+    y: -4,
+    scale: 1.02,
+    transition: {
+      duration: 0.2,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+};
 
 /**
  * Contract status enumeration
@@ -150,255 +192,145 @@ export default function ContractDetailPage() {
 
       const baseContract = await contractsApi.getById(contractId);
 
-      // Calculate derived properties with date validation
-      const contractStartDate = new Date(baseContract.dataContrato);
+      // Calculate contract status and metadata
+      const currentDate = new Date();
+      const contractDate = new Date(baseContract.dataContrato);
 
-      // Validate contract start date
-      if (isNaN(contractStartDate.getTime())) {
-        throw new Error(
-          `Invalid contract start date: ${baseContract.dataContrato}`
-        );
-      }
+      // Ensure valid dates
+      const validContractDate = !isNaN(contractDate.getTime())
+        ? contractDate
+        : new Date();
 
-      const expiryDate = addDays(
-        contractStartDate,
-        baseContract.prazo || 365 // Default to 365 days if prazo is not defined
-      );
-
-      // Validate expiry date
-      if (isNaN(expiryDate.getTime())) {
-        throw new Error(
-          `Invalid expiry date calculated from start date: ${baseContract.dataContrato} and prazo: ${baseContract.prazo}`
-        );
-      }
-
-      const daysRemaining = differenceInDays(expiryDate, new Date());
-
-      // Validate daysRemaining
-      if (isNaN(daysRemaining)) {
-        throw new Error(
-          `Invalid daysRemaining calculated. ExpiryDate: ${expiryDate}, Current: ${new Date()}`
-        );
-      }
-
-      const isExpired = daysRemaining < 0;
-      const isExpiringSoon = daysRemaining <= 30 && daysRemaining >= 0;
+      const prazo = baseContract.prazo || 0;
+      const expiryDate = addDays(validContractDate, prazo);
+      const daysRemaining = differenceInDays(expiryDate, currentDate);
 
       let status: ContractStatus;
-      if (isExpired) {
+      if (daysRemaining < 0) {
         status = ContractStatus.EXPIRED;
-      } else if (isExpiringSoon) {
+      } else if (daysRemaining <= 30) {
         status = ContractStatus.EXPIRING_SOON;
       } else {
         status = ContractStatus.ACTIVE;
       }
 
-      const extendedContract: ExtendedContract = {
+      return {
         ...baseContract,
-        // Ensure all required properties exist with defaults if missing
-        contrato: baseContract.contrato || "",
-        contratada: baseContract.contratada || "",
-        prazo: baseContract.prazo || 365,
-        categoriaContrato: (baseContract as any).categoriaContrato || "Geral",
-        filial: baseContract.filial || "",
-        dataContrato:
-          typeof baseContract.dataContrato === "string"
-            ? baseContract.dataContrato
-            : (baseContract.dataContrato as any) instanceof Date
-              ? (baseContract.dataContrato as Date).toISOString()
-              : new Date(baseContract.dataContrato as any).toISOString(),
-        // Add computed properties with fallbacks
         status,
-        daysRemaining: isNaN(daysRemaining) ? 0 : daysRemaining,
+        daysRemaining,
         expiryDate,
-        isExpired,
-        isExpiringSoon,
-        userId: "",
-      };
-
-      return extendedContract;
+        isExpired: daysRemaining < 0,
+        isExpiringSoon: daysRemaining <= 30 && daysRemaining >= 0,
+      } as ExtendedContract;
     },
     enabled: !!contractId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: 30000,
+    refetchOnWindowFocus: true,
   });
 
   /**
-   * Delete mutation with optimistic updates
+   * Delete contract mutation
    */
   const deleteMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: () => {
       if (!contractId) throw new Error("Invalid contract ID");
       return contractsApi.delete(contractId);
     },
-    onMutate: async () => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["contracts"] });
-
-      // Snapshot the previous value
-      const previousContracts = queryClient.getQueryData(["contracts"]);
-
-      // Optimistically update to the new value
-      queryClient.setQueryData(["contracts"], (old: any) => {
-        if (!old) return old;
-        return {
-          ...old,
-          data: old.data.filter((c: Contract) => c.id !== contractId),
-        };
-      });
-
-      return { previousContracts };
-    },
-    onError: (err, variables, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousContracts) {
-        queryClient.setQueryData(["contracts"], context.previousContracts);
-      }
-      toast.error("Erro ao excluir contrato");
-    },
     onSuccess: () => {
       toast.success("Contrato excluído com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["contracts"] });
       router.push("/dashboard");
     },
-    onSettled: () => {
-      // Always refetch after error or success
-      queryClient.invalidateQueries({ queryKey: ["contracts"] });
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Erro ao excluir contrato");
     },
   });
 
   /**
-   * Download PDF handler
+   * Event handlers
    */
-  const handleDownloadPdf = useCallback(async () => {
-    if (!contract?.arquivoPdfCaminho || !contractId) {
-      toast.error("Nenhum arquivo PDF disponível");
-      return;
-    }
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", value);
+    window.history.pushState({}, "", url.toString());
+  }, []);
 
-    const toastId = toast.loading("Baixando arquivo...");
+  const handleDownloadPdf = useCallback(async () => {
+    if (!contractId || !contract?.arquivoPdfCaminho) return;
 
     try {
       const blob = await contractsApi.downloadPdf(contractId);
-      const fileName =
-        contract.arquivoPdfNomeOriginal || `contrato_${contractId}.pdf`;
-
-      saveAs(blob, fileName);
-      toast.success("Download concluído!", { id: toastId });
+      const filename =
+        contract.arquivoPdfNomeOriginal || `contrato-${contractId}.pdf`;
+      saveAs(blob, filename);
+      toast.success("Download iniciado!");
     } catch (error) {
-      console.error("Download error:", error);
-      toast.error("Erro ao baixar arquivo", { id: toastId });
+      toast.error("Erro ao fazer download do PDF");
     }
-  }, [contract, contractId]);
+  }, [contractId, contract]);
 
-  /**
-   * Share contract handler
-   */
-  const handleShare = useCallback(async () => {
-    if (!shareOptions.email) {
-      toast.error("Por favor, insira um email válido");
-      return;
-    }
+  const handleCopyLink = useCallback(() => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success("Link copiado!");
+  }, []);
 
-    const toastId = toast.loading("Compartilhando contrato...");
-
-    try {
-      // Simulate API call - you would implement this in your backend
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      toast.success(`Contrato compartilhado com ${shareOptions.email}`, {
-        id: toastId,
-      });
-      setIsShareDialogOpen(false);
-      setShareOptions({ email: "", permissions: "view" });
-    } catch (error) {
-      toast.error("Erro ao compartilhar contrato", { id: toastId });
-    }
-  }, [shareOptions]);
-
-  /**
-   * Print handler
-   */
   const handlePrint = useCallback(() => {
     setIsPrintView(true);
     setTimeout(() => {
       window.print();
       setIsPrintView(false);
-    }, 100);
+    }, 500);
+  }, []);
+
+  const handleShare = useCallback(() => {
+    // Implementation for sharing functionality
+    toast.success("Funcionalidade de compartilhamento em desenvolvimento");
+    setIsShareDialogOpen(false);
   }, []);
 
   /**
-   * Copy contract link to clipboard
-   */
-  const handleCopyLink = useCallback(async () => {
-    const url = `${window.location.origin}/contracts/${contractId}`;
-
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success("Link copiado para a área de transferência!");
-    } catch (error) {
-      toast.error("Erro ao copiar link");
-    }
-  }, [contractId]);
-
-  /**
-   * Get status badge configuration
+   * Helper functions for UI elements
    */
   const getStatusBadge = (status: ContractStatus) => {
-    const config = {
-      [ContractStatus.ACTIVE]: {
-        label: "Ativo",
-        icon: CheckCircle,
-        className: "bg-green-100 text-green-800 border-green-200",
-      },
-      [ContractStatus.EXPIRED]: {
-        label: "Expirado",
-        icon: XCircle,
-        className: "bg-red-100 text-red-800 border-red-200",
-      },
-      [ContractStatus.EXPIRING_SOON]: {
-        label: "Expirando em Breve",
-        icon: AlertTriangle,
-        className: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      },
-      [ContractStatus.RENEWED]: {
-        label: "Renovado",
-        icon: CheckCircle,
-        className: "bg-blue-100 text-blue-800 border-blue-200",
-      },
-    };
-
-    return config[status] || config[ContractStatus.ACTIVE];
-  };
-
-  /**
-   * Get category icon and color
-   */
-  const getCategoryInfo = (category: string) => {
-    switch (category) {
-      case "Software":
-        return { icon: "💻", color: "bg-blue-100 text-blue-800" };
-      case "Aluguel":
-        return { icon: "🏢", color: "bg-yellow-100 text-yellow-800" };
-      case "TI":
-        return { icon: "⚙️", color: "bg-cyan-100 text-cyan-800" };
+    switch (status) {
+      case ContractStatus.ACTIVE:
+        return {
+          label: "Ativo",
+          className: "bg-green-100 text-green-800 border-green-200",
+          icon: CheckCircle,
+        };
+      case ContractStatus.EXPIRED:
+        return {
+          label: "Expirado",
+          className: "bg-red-100 text-red-800 border-red-200",
+          icon: XCircle,
+        };
+      case ContractStatus.EXPIRING_SOON:
+        return {
+          label: "Expira em breve",
+          className: "bg-yellow-100 text-yellow-800 border-yellow-200",
+          icon: AlertTriangle,
+        };
       default:
-        return { icon: "📁", color: "bg-gray-100 text-gray-800" };
+        return {
+          label: "Desconhecido",
+          className: "bg-gray-100 text-gray-800 border-gray-200",
+          icon: Info,
+        };
     }
   };
 
-  /**
-   * Handle tab change with URL update
-   */
-  const handleTabChange = useCallback((value: string) => {
-    setActiveTab(value);
+  const getCategoryInfo = (category: string) => {
+    const categoryMap: Record<string, { color: string; icon: any }> = {
+      Software: { color: "bg-blue-100 text-blue-800", icon: Shield },
+      Consultoria: { color: "bg-purple-100 text-purple-800", icon: Users },
+      Manutenção: { color: "bg-orange-100 text-orange-800", icon: Target },
+      default: { color: "bg-gray-100 text-gray-800", icon: Tag },
+    };
 
-    // Update URL without navigation
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", value);
-    window.history.pushState({}, "", url);
-  }, []);
+    return categoryMap[category] || categoryMap.default;
+  };
 
   /**
    * Error state rendering
@@ -437,7 +369,6 @@ export default function ContractDetailPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        {/* Header skeleton */}
         <div className="bg-white shadow-sm border-b">
           <div className="px-4 sm:px-6 lg:px-8 py-6">
             <div className="animate-pulse">
@@ -446,8 +377,6 @@ export default function ContractDetailPage() {
             </div>
           </div>
         </div>
-
-        {/* Content skeleton */}
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
@@ -461,31 +390,26 @@ export default function ContractDetailPage() {
                 </CardContent>
               </Card>
             </div>
-            <div>
-              <Card>
-                <CardContent className="p-6">
-                  <div className="animate-pulse space-y-4">
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    <div className="h-8 bg-gray-200 rounded w-full"></div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  // Type guard for contract
-  if (!contract) return null;
-
   const statusConfig = getStatusBadge(contract.status);
   const StatusIcon = statusConfig.icon;
   const categoryInfo = getCategoryInfo(contract.categoriaContrato);
 
   return (
-    <div className={cn("min-h-screen", isPrintView && "print:bg-white")}>
+    <motion.div
+      className={cn(
+        "min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40",
+        isPrintView && "print:bg-white"
+      )}
+      variants={pageVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {/* Page Header */}
       <PageHeader
         title={`Contrato #${contract.id}`}
@@ -497,7 +421,6 @@ export default function ContractDetailPage() {
         ]}
         actions={
           <div className="flex items-center gap-2 print:hidden">
-            {/* Quick Actions */}
             <Button
               variant="outline"
               size="icon"
@@ -590,232 +513,262 @@ export default function ContractDetailPage() {
               </Button>
             )}
 
-            {hasPermission("contracts:update") && (
-              <Button
-                variant="outline"
-                onClick={() => router.push(`/dashboard/${contract.id}/edit`)}
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Editar
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/dashboard/${contract.id}/edit`)}
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              Editar
+            </Button>
 
-            {hasPermission("contracts:delete") && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="destructive"
-                    disabled={deleteMutation.isPending}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4 mr-2" />
+                  )}
+                  Excluir
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja excluir este contrato? Esta ação não
+                    pode ser desfeita e todos os dados associados serão
+                    permanentemente removidos.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => deleteMutation.mutate()}
+                    className="bg-red-600 hover:bg-red-700"
                   >
-                    {deleteMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4 mr-2" />
-                    )}
-                    Excluir
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Tem certeza que deseja excluir este contrato? Esta ação
-                      não pode ser desfeita e todos os dados associados serão
-                      permanentemente removidos.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => deleteMutation.mutate()}
-                      className="bg-red-600 hover:bg-red-700"
-                    >
-                      Excluir permanentemente
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
+                    Excluir permanentemente
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         }
       />
 
       {/* Main Content */}
-      <div className="px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="px-6 lg:px-8 py-8">
+        <motion.div
+          className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+          variants={pageVariants}
+        >
           {/* Main Column */}
-          <div className="lg:col-span-2 space-y-6">
+          <motion.div
+            className="lg:col-span-2 space-y-6"
+            variants={cardVariants}
+          >
             {/* Contract Status Alert */}
             {contract.status === ContractStatus.EXPIRED && (
-              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
+              <motion.div
+                className="bg-red-50/80 backdrop-blur-sm border-l-4 border-red-400 p-6 rounded-xl shadow-lg"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+              >
                 <div className="flex items-start">
                   <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-red-800">
                       Contrato Expirado
                     </h3>
-                    <p className="text-sm text-red-700 mt-1">
-                      Este contrato expirou em {formatDate(contract.expiryDate)}
-                      . Considere renovar ou criar um novo contrato.
+                    <p className="mt-1 text-sm text-red-700">
+                      Este contrato expirou há{" "}
+                      {Math.abs(contract.daysRemaining)} dias . Considere
+                      renovar ou criar um novo contrato.
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {contract.status === ContractStatus.EXPIRING_SOON && (
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+              <motion.div
+                className="bg-yellow-50/80 backdrop-blur-sm border-l-4 border-yellow-400 p-6 rounded-xl shadow-lg"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+              >
                 <div className="flex items-start">
                   <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5" />
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-yellow-800">
-                      Contrato Expirando em Breve
+                      Contrato Expirando
                     </h3>
-                    <p className="text-sm text-yellow-700 mt-1">
-                      Este contrato expira em{" "}
-                      {!isNaN(contract.daysRemaining)
-                        ? contract.daysRemaining
-                        : "?"}{" "}
-                      dias ({formatDate(contract.expiryDate)}). Considere
-                      iniciar o processo de renovação.
+                    <p className="mt-1 text-sm text-yellow-700">
+                      Este contrato expira em {contract.daysRemaining} dias. É
+                      recomendado iniciar o processo de renovação.
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
-            {/* Tabs Navigation */}
+            {/* Modern Tabs Navigation */}
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="details">Detalhes</TabsTrigger>
-                <TabsTrigger value="documents">Documentos</TabsTrigger>
-                <TabsTrigger value="history">Histórico</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3 bg-white/60 backdrop-blur-xl border border-white/20 shadow-lg shadow-blue-500/5">
+                <TabsTrigger
+                  value="details"
+                  className="data-[state=active]:bg-white/80 data-[state=active]:shadow-lg data-[state=active]:text-blue-600 transition-all duration-200"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Detalhes
+                </TabsTrigger>
+                <TabsTrigger
+                  value="documents"
+                  className="data-[state=active]:bg-white/80 data-[state=active]:shadow-lg data-[state=active]:text-blue-600 transition-all duration-200"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Documentos
+                </TabsTrigger>
+                <TabsTrigger
+                  value="history"
+                  className="data-[state=active]:bg-white/80 data-[state=active]:shadow-lg data-[state=active]:text-blue-600 transition-all duration-200"
+                >
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Histórico
+                </TabsTrigger>
               </TabsList>
 
               {/* Details Tab */}
               <TabsContent value="details" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="flex items-center gap-2">
-                          <FileText className="h-5 w-5" />
-                          Informações do Contrato
-                        </CardTitle>
-                        <CardDescription>
-                          Criado em {formatDate(contract.dataCriacao)}
-                          {contract.dataAtualizacao && (
-                            <>
-                              {" "}
-                              • Atualizado em{" "}
-                              {formatRelativeTime(contract.dataAtualizacao)}
-                            </>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Card className="bg-white/60 backdrop-blur-xl border border-white/20 shadow-lg shadow-blue-500/5 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="flex items-center gap-2 text-2xl">
+                            <FileText className="h-6 w-6 text-blue-600" />
+                            Detalhes do Contrato
+                          </CardTitle>
+                          <CardDescription className="mt-2 text-base">
+                            Informações completas sobre este acordo
+                          </CardDescription>
+                          {contract.categoriaContrato && (
+                            <Badge className={cn("mt-2", categoryInfo.color)}>
+                              <categoryInfo.icon className="h-3 w-3 mr-1" />
+                              {contract.categoriaContrato}
+                            </Badge>
                           )}
-                        </CardDescription>
+                        </div>
+                        <Badge className={cn("gap-1", statusConfig.className)}>
+                          <StatusIcon className="h-3 w-3" />
+                          {statusConfig.label}
+                        </Badge>
                       </div>
-                      <Badge className={cn("gap-1", statusConfig.className)}>
-                        <StatusIcon className="h-3 w-3" />
-                        {statusConfig.label}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Contract Parties */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-500">
-                          Contratante
-                        </label>
-                        <div className="flex items-start gap-3">
-                          <Building className="h-5 w-5 text-gray-400 mt-0.5" />
-                          <div>
-                            <p className="font-medium text-gray-900">
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {/* Parties Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                            <Building className="h-4 w-4" />
+                            Contratante
+                          </label>
+                          <div className="bg-blue-50/50 border border-blue-200/50 rounded-lg p-4">
+                            <p className="font-semibold text-blue-900">
                               {contract.contratante}
                             </p>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-500">
-                          Contratada
-                        </label>
-                        <div className="flex items-start gap-3">
-                          <Building className="h-5 w-5 text-gray-400 mt-0.5" />
-                          <div>
-                            <p className="font-medium text-gray-900">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            Contratada
+                          </label>
+                          <div className="bg-green-50/50 border border-green-200/50 rounded-lg p-4">
+                            <p className="font-semibold text-green-900">
                               {contract.contratada}
                             </p>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Contract Object */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-500">
-                        Objeto do Contrato
-                      </label>
-                      <p className="text-gray-900">{contract.objeto}</p>
-                    </div>
-
-                    {/* Full Contract Text */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-500">
-                        Descrição Completa
-                      </label>
-                      <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                          {contract.contrato}
+                      {/* Contract Object */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                          <Target className="h-4 w-4" />
+                          Objeto do Contrato
+                        </label>
+                        <p className="text-gray-900 leading-relaxed">
+                          {contract.objeto}
                         </p>
                       </div>
-                    </div>
 
-                    {/* Additional Info Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Full Contract Text */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
-                          <Tag className="h-4 w-4" />
-                          Categoria
+                          <FileText className="h-4 w-4" />
+                          Descrição Completa
                         </label>
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{categoryInfo.icon}</span>
-                          <Badge className={categoryInfo.color}>
-                            {contract.categoriaContrato}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
-                          Filial
-                        </label>
-                        <p className="font-medium">{contract.filial}</p>
-                      </div>
-                    </div>
-
-                    {/* Observations */}
-                    {contract.observacoes && (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
-                          <Info className="h-4 w-4" />
-                          Observações
-                        </label>
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                          <p className="text-sm text-yellow-800">
-                            {contract.observacoes}
+                        <div className="bg-gray-50/50 border border-gray-200/50 rounded-lg p-4">
+                          <p className="text-gray-900 leading-relaxed">
+                            {contract.contrato}
                           </p>
                         </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+
+                      {/* Additional Info Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                            <Tag className="h-4 w-4" />
+                            Categoria
+                          </label>
+                          <Badge className={categoryInfo.color}>
+                            <categoryInfo.icon className="h-3 w-3 mr-1" />
+                            {contract.categoriaContrato}
+                          </Badge>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            Filial
+                          </label>
+                          <p className="font-medium">{contract.filial}</p>
+                        </div>
+                      </div>
+
+                      {/* Observations */}
+                      {contract.observacoes && (
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                            <Info className="h-4 w-4" />
+                            Observações
+                          </label>
+                          <div className="bg-yellow-50/50 border border-yellow-200/50 rounded-lg p-4">
+                            <p className="text-yellow-800 leading-relaxed">
+                              {contract.observacoes}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </TabsContent>
 
               {/* Documents Tab */}
               <TabsContent value="documents" className="space-y-6">
-                <Card>
+                <Card className="bg-white/60 backdrop-blur-xl border border-white/20 shadow-lg shadow-blue-500/5">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <FileText className="h-5 w-5" />
@@ -827,8 +780,8 @@ export default function ContractDetailPage() {
                   </CardHeader>
                   <CardContent>
                     {contract.arquivoPdfCaminho ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="p-2 bg-red-100 rounded-lg">
                               <FileText className="h-6 w-6 text-red-600" />
@@ -836,14 +789,12 @@ export default function ContractDetailPage() {
                             <div>
                               <p className="font-medium text-gray-900">
                                 {contract.arquivoPdfNomeOriginal ||
-                                  "Contrato Original"}
+                                  "contrato.pdf"}
                               </p>
                               <p className="text-sm text-gray-500">
-                                PDF
                                 {contract.arquivoPdfTamanho && (
                                   <>
-                                    {" "}
-                                    •{" "}
+                                    Tamanho:{" "}
                                     {formatFileSize(contract.arquivoPdfTamanho)}
                                   </>
                                 )}
@@ -865,18 +816,16 @@ export default function ContractDetailPage() {
                         <p className="text-gray-500">
                           Nenhum documento anexado a este contrato
                         </p>
-                        {hasPermission("contracts:update") && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-4"
-                            onClick={() =>
-                              router.push(`/dashboard/${contract.id}/edit`)
-                            }
-                          >
-                            Anexar Documento
-                          </Button>
-                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-4"
+                          onClick={() =>
+                            router.push(`/dashboard/${contract.id}/edit`)
+                          }
+                        >
+                          Anexar Documento
+                        </Button>
                       </div>
                     )}
                   </CardContent>
@@ -885,7 +834,7 @@ export default function ContractDetailPage() {
 
               {/* History Tab */}
               <TabsContent value="history" className="space-y-6">
-                <Card>
+                <Card className="bg-white/60 backdrop-blur-xl border border-white/20 shadow-lg shadow-blue-500/5">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <BarChart3 className="h-5 w-5" />
@@ -906,12 +855,17 @@ export default function ContractDetailPage() {
                 </Card>
               </TabsContent>
             </Tabs>
-          </div>
+          </motion.div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
+          {/* Modern Sidebar */}
+          <motion.div
+            className="space-y-6"
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+          >
             {/* Key Dates Card */}
-            <Card>
+            <Card className="bg-white/60 backdrop-blur-xl border border-white/20 shadow-lg shadow-blue-500/5 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
@@ -924,17 +878,20 @@ export default function ContractDetailPage() {
                     Data do Contrato
                   </label>
                   <p className="font-medium">
-                    {format(
-                      new Date(contract.dataContrato),
-                      "dd 'de' MMMM 'de' yyyy",
-                      { locale: ptBR }
-                    )}
+                    {contract.dataContrato &&
+                    !isNaN(new Date(contract.dataContrato).getTime())
+                      ? format(
+                          new Date(contract.dataContrato),
+                          "dd 'de' MMMM 'de' yyyy",
+                          { locale: ptBR }
+                        )
+                      : "Data não disponível"}
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-500">
-                    Vencimento
+                    Data de Vencimento
                   </label>
                   <p className="font-medium">
                     {contract.expiryDate &&
@@ -942,27 +899,18 @@ export default function ContractDetailPage() {
                       ? format(contract.expiryDate, "dd 'de' MMMM 'de' yyyy", {
                           locale: ptBR,
                         })
-                      : "Data inválida"}
+                      : "Data não disponível"}
                   </p>
-                  {contract.daysRemaining > 0 ? (
-                    <p className="text-sm text-gray-500">
+                  {contract.daysRemaining > 0 && (
+                    <p className="text-sm text-gray-600">
                       Em {contract.daysRemaining} dias
-                    </p>
-                  ) : contract.daysRemaining < 0 &&
-                    !isNaN(contract.daysRemaining) ? (
-                    <p className="text-sm text-red-500">
-                      Expirado há {Math.abs(contract.daysRemaining)} dias
-                    </p>
-                  ) : (
-                    <p className="text-sm text-red-500">
-                      Status de expiração indisponível
                     </p>
                   )}
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-500">
-                    Prazo Total
+                    Prazo
                   </label>
                   <p className="font-medium">{contract.prazo} dias</p>
                 </div>
@@ -972,7 +920,7 @@ export default function ContractDetailPage() {
                     <label className="text-sm font-medium text-gray-500">
                       Última Atualização
                     </label>
-                    <p className="font-medium">
+                    <p className="text-sm text-gray-600">
                       {formatRelativeTime(contract.dataAtualizacao)}
                     </p>
                   </div>
@@ -981,7 +929,7 @@ export default function ContractDetailPage() {
             </Card>
 
             {/* Financial Terms Card */}
-            <Card>
+            <Card className="bg-white/60 backdrop-blur-xl border border-white/20 shadow-lg shadow-blue-500/5 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
@@ -989,6 +937,17 @@ export default function ContractDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {contract.valorTotalContrato && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-500">
+                      Valor Total do Contrato
+                    </label>
+                    <p className="font-medium text-xl text-green-600">
+                      {formatCurrency(contract.valorTotalContrato)}
+                    </p>
+                  </div>
+                )}
+
                 {contract.multa && (
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-500">
@@ -1018,7 +977,8 @@ export default function ContractDetailPage() {
                   </div>
                 )}
 
-                {!contract.multa &&
+                {!contract.valorTotalContrato &&
+                  !contract.multa &&
                   !contract.rescisao &&
                   !contract.avisoPrevia && (
                     <p className="text-sm text-gray-500 text-center py-4">
@@ -1029,34 +989,44 @@ export default function ContractDetailPage() {
             </Card>
 
             {/* Quick Actions Card */}
-            <Card>
+            <Card className="bg-white/60 backdrop-blur-xl border border-white/20 shadow-lg shadow-blue-500/5 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300">
               <CardHeader>
-                <CardTitle>Ações Rápidas</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Ações Rápidas
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-3">
                 <Button
                   variant="outline"
                   className="w-full justify-start"
-                  onClick={() => router.push(`/dashboard/create`)}
+                  onClick={() => router.push(`/dashboard/${contract.id}/edit`)}
                 >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Duplicar Contrato
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar Contrato
                 </Button>
 
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => router.push(`/contracts`)}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Ver Todos os Contratos
-                </Button>
-
-                {contract.isExpiringSoon && (
+                {contract.arquivoPdfCaminho && (
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => router.push(`/dashboard/create`)}
+                    onClick={handleDownloadPdf}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Baixar PDF
+                  </Button>
+                )}
+
+                {contract.status === ContractStatus.EXPIRING_SOON && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      // Implementation for contract renewal
+                      toast.success(
+                        "Funcionalidade de renovação em desenvolvimento"
+                      );
+                    }}
                   >
                     <Clock className="h-4 w-4 mr-2" />
                     Renovar Contrato
@@ -1064,10 +1034,10 @@ export default function ContractDetailPage() {
                 )}
               </CardContent>
             </Card>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

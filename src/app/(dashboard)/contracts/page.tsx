@@ -277,7 +277,7 @@ export default function ContractsPage() {
   // Estatísticas calculadas
   const quickStats = useMemo(() => {
     const totalValue = contracts.reduce((sum, contract) => {
-      return sum + (contract.multa || 0);
+      return sum + (contract.valorTotalContrato || 0);
     }, 0);
 
     const activeContracts = contracts.filter(
@@ -767,7 +767,7 @@ export default function ContractsPage() {
                     )}
                   </div>
                   <p className="text-sm text-navy-600 font-medium">
-                    Soma das cláusulas penais
+                    Valor total dos contratos
                   </p>
                 </div>
               </div>

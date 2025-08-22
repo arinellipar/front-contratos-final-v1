@@ -327,6 +327,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
   const [valorTotalFormatado, setValorTotalFormatado] = useState<string>("");
   const [valorTotalRaw, setValorTotalRaw] = useState<string>("");
   const [multaFormatada, setMultaFormatada] = useState<string>("");
+  const [multaRaw, setMultaRaw] = useState<string>("");
   const [isInitialLoading, setIsInitialLoading] =
     useState<boolean>(!!contractId);
 
@@ -415,6 +416,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
   useEffect(() => {
     if (initialData && contractId) {
       console.log("🔄 Loading initial data for edit:", initialData);
+      console.log("💰💰💰 MULTA INICIAL RECEBIDA:", initialData.multa);
 
       // Reset form with initial data
       reset({
@@ -440,11 +442,22 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
 
       // Set the multa formatted state
       if (initialData.multa) {
+        console.log("💰 [LOAD] Initial multa value:", initialData.multa);
         const multaValue =
           typeof initialData.multa === "string"
             ? parseFloat(initialData.multa)
             : initialData.multa;
-        const formattedMulta = formatCurrency(multaValue);
+        console.log("💰 [LOAD] Multa parsed value:", multaValue);
+        // Converter o valor decimal para centavos para manter consistência
+        const multaRawValue = Math.round(multaValue * 100).toString();
+        console.log("💰 [LOAD] Multa raw value (cents):", multaRawValue);
+        setMultaRaw(multaRawValue);
+        // Garantir que o valor em centavos seja o armazenado no form state
+        setValue("multa", multaRawValue);
+        const formattedMulta = formatCentsAsCurrency(
+          parseInt(multaRawValue, 10)
+        );
+        console.log("💰 [LOAD] Multa formatted:", formattedMulta);
         setMultaFormatada(formattedMulta);
       }
 
@@ -530,11 +543,15 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
   const handleMultaChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const rawValue = e.target.value.replace(/[^\d]/g, "");
+      console.log("💰 [CHANGE] Multa raw input:", rawValue);
+      setMultaRaw(rawValue);
 
       if (rawValue) {
         const formattedValue = formatCentsAsCurrency(parseInt(rawValue, 10));
+        console.log("💰 [CHANGE] Multa formatted:", formattedValue);
         setMultaFormatada(formattedValue);
-        setValue("multa", formattedValue);
+        setValue("multa", rawValue); // Salvar o valor bruto, não o formatado
+        console.log("💰 [CHANGE] Set form value to:", rawValue);
       } else {
         setMultaFormatada("");
         setValue("multa", "");
@@ -586,6 +603,15 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
         "🔍 Final value to send:",
         parseRawCents(data.valorTotalContrato) / 100
       );
+
+      // Log específico para multa
+      console.log("💰 Multa raw value from form:", data.multa);
+      console.log("💰 Multa raw from state:", multaRaw);
+
+      // CORREÇÃO: Usar o valor bruto do estado em vez do formatado do form
+      const multaValue = multaRaw ? parseRawCents(multaRaw) / 100 : undefined;
+      console.log("💰 Multa final value to send:", multaValue);
+
       const submitData: ContractCreateDto = {
         contrato: data.contrato,
         contratante: data.contratante,
@@ -594,7 +620,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
         dataContrato: data.dataContrato,
         prazo: parseInt(data.prazo, 10),
         rescisao: data.rescisao ? parseInt(data.rescisao, 10) : undefined,
-        multa: data.multa ? parseCurrency(data.multa) : undefined,
+        multa: multaValue,
         avisoPrevia: data.avisoPrevia
           ? parseInt(data.avisoPrevia, 10)
           : undefined,
@@ -1081,6 +1107,13 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-navy-600 font-bold">
                 R$
               </div>
+              {/* Campo hidden registrado para garantir envio do valor bruto (centavos) */}
+              <input
+                type="hidden"
+                {...register("multa")}
+                value={multaRaw}
+                readOnly
+              />
               <ModernInput
                 value={multaFormatada}
                 onChange={handleMultaChange}

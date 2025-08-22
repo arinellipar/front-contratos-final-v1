@@ -191,7 +191,9 @@ export const contractsApi = {
     formData.append("setorResponsavel", data.setorResponsavel);
 
     if (!data.valorTotalContrato || data.valorTotalContrato <= 0) {
-      throw new Error("Valor total do contrato é obrigatório e deve ser maior que zero");
+      throw new Error(
+        "Valor total do contrato é obrigatório e deve ser maior que zero"
+      );
     }
     formData.append("valorTotalContrato", data.valorTotalContrato.toString());
 
@@ -220,7 +222,10 @@ export const contractsApi = {
     if (data.avisoPrevia !== undefined && data.avisoPrevia !== null) {
       formData.append("avisoPrevia", data.avisoPrevia.toString());
     }
-    if (data.quantidadeParcelas !== undefined && data.quantidadeParcelas !== null) {
+    if (
+      data.quantidadeParcelas !== undefined &&
+      data.quantidadeParcelas !== null
+    ) {
       formData.append("quantidadeParcelas", data.quantidadeParcelas.toString());
     }
     if (data.observacoes) {
@@ -255,7 +260,10 @@ export const contractsApi = {
     formData.append("filial", (data.filial || 1).toString());
     formData.append("categoriaContrato", data.categoriaContrato || "");
     formData.append("setorResponsavel", data.setorResponsavel || "");
-    formData.append("valorTotalContrato", (data.valorTotalContrato || 0).toString());
+    formData.append(
+      "valorTotalContrato",
+      (data.valorTotalContrato || 0).toString()
+    );
     formData.append("tipoPagamento", (data.tipoPagamento || 1).toString());
     formData.append("formaPagamento", (data.formaPagamento || 1).toString());
     formData.append("dataFinal", data.dataFinal || "");
@@ -270,7 +278,10 @@ export const contractsApi = {
     if (data.avisoPrevia !== undefined && data.avisoPrevia !== null) {
       formData.append("avisoPrevia", data.avisoPrevia.toString());
     }
-    if (data.quantidadeParcelas !== undefined && data.quantidadeParcelas !== null) {
+    if (
+      data.quantidadeParcelas !== undefined &&
+      data.quantidadeParcelas !== null
+    ) {
       formData.append("quantidadeParcelas", data.quantidadeParcelas.toString());
     }
     if (data.observacoes) {
@@ -371,11 +382,14 @@ export const contractsApi = {
       const pendingContracts = stats.expiringContracts?.length || 0;
 
       const totalValue = contracts.reduce((sum: number, contract: Contract) => {
-        return sum + (parseFloat(contract.multa?.toString() || "0") || 0);
+        return (
+          sum +
+          (parseFloat(contract.valorTotalContrato?.toString() || "0") || 0)
+        );
       }, 0);
 
       const averageValue =
-        stats.totalContracts > 0 ? totalValue / stats.totalContracts : 0;
+        contracts.length > 0 ? totalValue / contracts.length : 0;
       const renewalRate =
         stats.totalContracts > 0
           ? (activeContracts / stats.totalContracts) * 100
