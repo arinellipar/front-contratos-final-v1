@@ -65,7 +65,7 @@ export default function EditContractPage() {
     categoriaContrato: contract.categoriaContrato,
     setorResponsavel: contract.setorResponsavel || "",
     valorTotalContrato: contract.valorTotalContrato
-      ? Math.round(contract.valorTotalContrato * 100).toString()
+      ? (contract.valorTotalContrato * 100).toString().replace(/\D/g, "")
       : "",
     tipoPagamento: contract.tipoPagamento || 1,
     quantidadeParcelas: contract.quantidadeParcelas?.toString(),

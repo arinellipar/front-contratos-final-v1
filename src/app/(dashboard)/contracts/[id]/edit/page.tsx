@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/layout/Pageheader";
 import { ContractForm } from "@/components/contracts/ContractForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { Filial, TipoPagamento, FormaPagamento } from "@/lib/types/contract";
 
 export default function EditContractPage() {
   const params = useParams();
@@ -48,6 +49,21 @@ export default function EditContractPage() {
     );
   }
 
+  const coerceEnumNumber = (
+    val: any,
+    enumObj: any,
+    fallback: number
+  ): number => {
+    if (typeof val === "number" && Number.isFinite(val)) return val;
+    if (typeof val === "string" && val !== "") {
+      const n = Number(val);
+      if (Number.isFinite(n)) return n;
+      const mapped = (enumObj as any)[val as keyof typeof enumObj];
+      if (typeof mapped === "number") return mapped as number;
+    }
+    return fallback;
+  };
+
   // Convert contract data to form format
 
   const initialData = {
@@ -61,15 +77,27 @@ export default function EditContractPage() {
     multa: contract.multa?.toString(),
     avisoPrevia: contract.avisoPrevia?.toString(),
     observacoes: contract.observacoes,
-    filial: contract.filial || 1,
+    filial: coerceEnumNumber(
+      (contract as any).filial,
+      Filial,
+      Filial.RioDeJaneiro
+    ),
     categoriaContrato: contract.categoriaContrato,
     setorResponsavel: contract.setorResponsavel || "",
     valorTotalContrato: contract.valorTotalContrato
-      ? Math.round(contract.valorTotalContrato * 100).toString()
+      ? (contract.valorTotalContrato * 100).toString().replace(/\D/g, "")
       : "",
-    tipoPagamento: contract.tipoPagamento || 1,
+    tipoPagamento: coerceEnumNumber(
+      (contract as any).tipoPagamento,
+      TipoPagamento,
+      TipoPagamento.AVista
+    ),
     quantidadeParcelas: contract.quantidadeParcelas?.toString(),
-    formaPagamento: contract.formaPagamento || 1,
+    formaPagamento: coerceEnumNumber(
+      (contract as any).formaPagamento,
+      FormaPagamento,
+      FormaPagamento.Pix
+    ),
     dataFinal: contract.dataFinal
       ? new Date(contract.dataFinal).toISOString().split("T")[0]
       : new Date(
@@ -79,6 +107,14 @@ export default function EditContractPage() {
           .toISOString()
           .split("T")[0],
   };
+
+  if (contract.id === 1) {
+    console.log("[EditContractPage] Coerced initialData for contract 1:", {
+      filial: initialData.filial,
+      tipoPagamento: initialData.tipoPagamento,
+      formaPagamento: initialData.formaPagamento,
+    });
+  }
 
   return (
     <div className="space-y-6">

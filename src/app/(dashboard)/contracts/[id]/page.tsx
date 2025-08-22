@@ -173,6 +173,14 @@ export default function ContractDetailPage() {
       }
 
       const daysRemaining = differenceInDays(expiryDate, new Date());
+
+      // Validate daysRemaining
+      if (isNaN(daysRemaining)) {
+        throw new Error(
+          `Invalid daysRemaining calculated. ExpiryDate: ${expiryDate}, Current: ${new Date()}`
+        );
+      }
+
       const isExpired = daysRemaining < 0;
       const isExpiringSoon = daysRemaining <= 30 && daysRemaining >= 0;
 
@@ -199,9 +207,9 @@ export default function ContractDetailPage() {
             : (baseContract.dataContrato as any) instanceof Date
               ? (baseContract.dataContrato as Date).toISOString()
               : new Date(baseContract.dataContrato as any).toISOString(),
-        // Add computed properties
+        // Add computed properties with fallbacks
         status,
-        daysRemaining,
+        daysRemaining: isNaN(daysRemaining) ? 0 : daysRemaining,
         expiryDate,
         isExpired,
         isExpiringSoon,
@@ -664,9 +672,12 @@ export default function ContractDetailPage() {
                       Contrato Expirando em Breve
                     </h3>
                     <p className="text-sm text-yellow-700 mt-1">
-                      Este contrato expira em {contract.daysRemaining} dias (
-                      {formatDate(contract.expiryDate)}). Considere iniciar o
-                      processo de renovação.
+                      Este contrato expira em{" "}
+                      {!isNaN(contract.daysRemaining)
+                        ? contract.daysRemaining
+                        : "?"}{" "}
+                      dias ({formatDate(contract.expiryDate)}). Considere
+                      iniciar o processo de renovação.
                     </p>
                   </div>
                 </div>
@@ -937,9 +948,14 @@ export default function ContractDetailPage() {
                     <p className="text-sm text-gray-500">
                       Em {contract.daysRemaining} dias
                     </p>
-                  ) : (
+                  ) : contract.daysRemaining < 0 &&
+                    !isNaN(contract.daysRemaining) ? (
                     <p className="text-sm text-red-500">
                       Expirado há {Math.abs(contract.daysRemaining)} dias
+                    </p>
+                  ) : (
+                    <p className="text-sm text-red-500">
+                      Status de expiração indisponível
                     </p>
                   )}
                 </div>

@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState, useEffect, useCallback } from "react";
@@ -323,6 +323,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
     watch,
     setValue,
     reset,
+    control,
     formState: { errors },
   } = useForm<ContractFormData>({
     resolver: zodResolver(contractSchema),
@@ -345,6 +346,88 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
   const quantidadeParcelas = watch("quantidadeParcelas");
   const tipoPagamento = watch("tipoPagamento");
   const formaPagamento = watch("formaPagamento");
+  const filialWatch = watch("filial");
+
+  // Sanitize select numeric values to avoid NaN in value attribute
+  const safeSelectNumber = useCallback((val: any, fallback: number): number => {
+    if (typeof val === "number" && Number.isFinite(val)) return val;
+    if (typeof val === "string" && val !== "") {
+      const n = Number(val);
+      if (Number.isFinite(n)) return n;
+    }
+    return fallback;
+  }, []);
+
+  // Helper to coerce values that may arrive as string names (e.g., "AVista") or numeric strings
+  const coerceEnumValue = useCallback(
+    (value: any, enumObj: any, fallback: number): number => {
+      if (typeof value === "number" && !isNaN(value)) return value;
+      if (typeof value === "string") {
+        const numeric = Number(value);
+        if (!isNaN(numeric)) return numeric;
+        const mapped = (enumObj as any)[value as keyof typeof enumObj];
+        if (typeof mapped === "number") return mapped as number;
+      }
+      return fallback;
+    },
+    []
+  );
+
+  // Ensure selects are populated correctly in edit mode even if API returns enum names
+  useEffect(() => {
+    if (initialData && contractId) {
+      const coercedFilial = coerceEnumValue(
+        (initialData as any).filial,
+        Filial,
+        Filial.RioDeJaneiro
+      );
+      const coercedTipo = coerceEnumValue(
+        (initialData as any).tipoPagamento,
+        TipoPagamento,
+        TipoPagamento.AVista
+      );
+      const coercedForma = coerceEnumValue(
+        (initialData as any).formaPagamento,
+        FormaPagamento,
+        FormaPagamento.Pix
+      );
+
+      setValue("filial", coercedFilial as any);
+      setValue("tipoPagamento", coercedTipo as any);
+      setValue("formaPagamento", coercedForma as any);
+    }
+  }, [initialData, contractId, setValue, coerceEnumValue]);
+
+  // Load initial data when available (for edit mode)
+  useEffect(() => {
+    if (initialData && contractId) {
+      console.log("🔄 Loading initial data for edit:", initialData);
+
+      // Reset form with initial data
+      reset({
+        prazo: "30",
+        dataContrato: new Date().toISOString().split("T")[0],
+        dataFinal: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0],
+        categoriaContrato: "Outros",
+        filial: Filial.RioDeJaneiro,
+        tipoPagamento: TipoPagamento.AVista,
+        formaPagamento: FormaPagamento.Pix,
+        ...initialData,
+      });
+
+      // Set the valor total formatted states
+      if (initialData.valorTotalContrato) {
+        const rawValue = initialData.valorTotalContrato;
+        setValorTotalRaw(rawValue);
+        const formattedValue = formatCentsAsCurrency(parseInt(rawValue, 10));
+        setValorTotalFormatado(formattedValue);
+      }
+
+      setIsInitialLoading(false);
+    }
+  }, [initialData, contractId, reset]);
 
   // Mutations
   const createMutation = useMutation({
@@ -435,24 +518,34 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
     }
   }, [valorTotal, quantidadeParcelas]);
 
-  // Auto-set parcelas based on payment type
+  // Auto-set parcelas based on payment type (only for new contracts)
   useEffect(() => {
-    if (tipoPagamento === TipoPagamento.AVista) {
+    if (!contractId && tipoPagamento === TipoPagamento.AVista) {
       setValue("quantidadeParcelas", "1");
     }
-  }, [tipoPagamento, setValue]);
+  }, [tipoPagamento, setValue, contractId]);
 
-  // Auto-set payment type when PIX is selected
+  // Auto-set payment type when PIX is selected (only for new contracts)
   useEffect(() => {
-    if (formaPagamento === FormaPagamento.Pix) {
+    if (!contractId && formaPagamento === FormaPagamento.Pix) {
       setValue("tipoPagamento", TipoPagamento.AVista);
       setValue("quantidadeParcelas", "1");
     }
-  }, [formaPagamento, setValue]);
+  }, [formaPagamento, setValue, contractId]);
 
   // Submit handler
   const onSubmit: SubmitHandler<ContractFormData> = async (data) => {
     try {
+      console.log("🔍 Form data before processing:", data);
+      console.log("🔍 valorTotalContrato raw:", data.valorTotalContrato);
+      console.log(
+        "🔍 parseRawCents result:",
+        parseRawCents(data.valorTotalContrato)
+      );
+      console.log(
+        "🔍 Final value to send:",
+        parseRawCents(data.valorTotalContrato) / 100
+      );
       const submitData: ContractCreateDto = {
         contrato: data.contrato,
         contratante: data.contratante,
@@ -470,7 +563,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
           typeof data.filial === "number" ? data.filial : Number(data.filial),
         categoriaContrato: data.categoriaContrato,
         setorResponsavel: data.setorResponsavel,
-        valorTotalContrato: parseRawCents(data.valorTotalContrato),
+        valorTotalContrato: parseRawCents(data.valorTotalContrato) / 100, // Convert cents back to decimal
         tipoPagamento:
           typeof data.tipoPagamento === "number"
             ? data.tipoPagamento
@@ -682,27 +775,40 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
             error={errors.filial?.message}
             description="Unidade responsável"
           >
-            <ModernSelect
-              {...register("filial", { setValueAs: (v) => Number(v) })}
-            >
-              <option value={Filial.RioDeJaneiro}>🏢 Rio de Janeiro</option>
-              <option value={Filial.Campinas}>🏢 Campinas</option>
-              <option value={Filial.Brasilia}>🏢 Brasília</option>
-              <option value={Filial.Curitiba}>🏢 Curitiba</option>
-              <option value={Filial.SaoPaulo}>🏢 São Paulo</option>
-              <option value={Filial.Joinville}>🏢 Joinville</option>
-              <option value={Filial.BeloHorizonte}>🏢 Belo Horizonte</option>
-              <option value={Filial.Salvador}>🏢 Salvador</option>
-              <option value={Filial.Vitoria}>🏢 Vitória</option>
-              <option value={Filial.Recife}>🏢 Recife</option>
-              <option value={Filial.Manaus}>🏢 Manaus</option>
-              <option value={Filial.ZonaDaMataMineira}>
-                🏢 Zona da Mata Mineira
-              </option>
-              <option value={Filial.RibeiraoPreto}>🏢 Ribeirão Preto</option>
-              <option value={Filial.NovaIorque}>🏢 Nova Iorque</option>
-              <option value={Filial.Orlando}>🏢 Orlando</option>
-            </ModernSelect>
+            <Controller
+              control={control}
+              name="filial"
+              render={({ field }) => (
+                <ModernSelect
+                  value={
+                    safeSelectNumber(field.value, Filial.RioDeJaneiro) as any
+                  }
+                  onChange={(e: any) => field.onChange(Number(e.target.value))}
+                >
+                  <option value={Filial.RioDeJaneiro}>🏢 Rio de Janeiro</option>
+                  <option value={Filial.Campinas}>🏢 Campinas</option>
+                  <option value={Filial.Brasilia}>🏢 Brasília</option>
+                  <option value={Filial.Curitiba}>🏢 Curitiba</option>
+                  <option value={Filial.SaoPaulo}>🏢 São Paulo</option>
+                  <option value={Filial.Joinville}>🏢 Joinville</option>
+                  <option value={Filial.BeloHorizonte}>
+                    🏢 Belo Horizonte
+                  </option>
+                  <option value={Filial.Salvador}>🏢 Salvador</option>
+                  <option value={Filial.Vitoria}>🏢 Vitória</option>
+                  <option value={Filial.Recife}>🏢 Recife</option>
+                  <option value={Filial.Manaus}>🏢 Manaus</option>
+                  <option value={Filial.ZonaDaMataMineira}>
+                    🏢 Zona da Mata Mineira
+                  </option>
+                  <option value={Filial.RibeiraoPreto}>
+                    🏢 Ribeirão Preto
+                  </option>
+                  <option value={Filial.NovaIorque}>🏢 Nova Iorque</option>
+                  <option value={Filial.Orlando}>🏢 Orlando</option>
+                </ModernSelect>
+              )}
+            />
           </ModernField>
 
           <ModernField
@@ -780,12 +886,21 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
             error={errors.tipoPagamento?.message}
             description="Modalidade de pagamento"
           >
-            <ModernSelect
-              {...register("tipoPagamento", { setValueAs: (v) => Number(v) })}
-            >
-              <option value={TipoPagamento.AVista}>💰 À Vista</option>
-              <option value={TipoPagamento.Parcelado}>📅 Parcelado</option>
-            </ModernSelect>
+            <Controller
+              control={control}
+              name="tipoPagamento"
+              render={({ field }) => (
+                <ModernSelect
+                  value={
+                    safeSelectNumber(field.value, TipoPagamento.AVista) as any
+                  }
+                  onChange={(e: any) => field.onChange(Number(e.target.value))}
+                >
+                  <option value={TipoPagamento.AVista}>💰 À Vista</option>
+                  <option value={TipoPagamento.Parcelado}>📅 Parcelado</option>
+                </ModernSelect>
+              )}
+            />
           </ModernField>
         </div>
 
@@ -815,27 +930,34 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
           error={errors.formaPagamento?.message}
           description="Método de pagamento preferido"
         >
-          <ModernSelect
-            {...register("formaPagamento", { setValueAs: (v) => Number(v) })}
-          >
-            <option
-              value={FormaPagamento.Pix}
-              disabled={tipoPagamento === TipoPagamento.Parcelado}
-            >
-              📱 PIX{" "}
-              {tipoPagamento === TipoPagamento.Parcelado
-                ? "(não disponível para parcelado)"
-                : ""}
-            </option>
-            <option value={FormaPagamento.TED}>🏦 TED</option>
-            <option value={FormaPagamento.Transferencia}>
-              💳 Transferência
-            </option>
-            <option value={FormaPagamento.Boleto}>📄 Boleto</option>
-            <option value={FormaPagamento.CartaoCredito}>
-              💳 Cartão de Crédito
-            </option>
-          </ModernSelect>
+          <Controller
+            control={control}
+            name="formaPagamento"
+            render={({ field }) => (
+              <ModernSelect
+                value={safeSelectNumber(field.value, FormaPagamento.Pix) as any}
+                onChange={(e: any) => field.onChange(Number(e.target.value))}
+              >
+                <option
+                  value={FormaPagamento.Pix}
+                  disabled={tipoPagamento === TipoPagamento.Parcelado}
+                >
+                  📱 PIX{" "}
+                  {tipoPagamento === TipoPagamento.Parcelado
+                    ? "(não disponível para parcelado)"
+                    : ""}
+                </option>
+                <option value={FormaPagamento.TED}>🏦 TED</option>
+                <option value={FormaPagamento.Transferencia}>
+                  💳 Transferência
+                </option>
+                <option value={FormaPagamento.Boleto}>📄 Boleto</option>
+                <option value={FormaPagamento.CartaoCredito}>
+                  💳 Cartão de Crédito
+                </option>
+              </ModernSelect>
+            )}
+          />
         </ModernField>
 
         {/* Calculated Value Display */}
