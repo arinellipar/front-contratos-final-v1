@@ -220,7 +220,19 @@ const contractSchema = z.object({
     message: "O prazo deve ser um número positivo",
   }),
   rescisao: z.string().optional(),
-  multa: z.string().optional(),
+  multa: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (!val) return true; // Campo opcional
+        const numValue = parseCurrency(val);
+        return numValue >= 0;
+      },
+      {
+        message: "O valor da multa deve ser positivo",
+      }
+    ),
   avisoPrevia: z.string().optional(),
   observacoes: z.string().optional(),
   filial: z.any().transform((val) => {
@@ -314,6 +326,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
   const [valorPorParcela, setValorPorParcela] = useState<string>("");
   const [valorTotalFormatado, setValorTotalFormatado] = useState<string>("");
   const [valorTotalRaw, setValorTotalRaw] = useState<string>("");
+  const [multaFormatada, setMultaFormatada] = useState<string>("");
   const [isInitialLoading, setIsInitialLoading] =
     useState<boolean>(!!contractId);
 
@@ -425,6 +438,16 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
         setValorTotalFormatado(formattedValue);
       }
 
+      // Set the multa formatted state
+      if (initialData.multa) {
+        const multaValue =
+          typeof initialData.multa === "string"
+            ? parseFloat(initialData.multa)
+            : initialData.multa;
+        const formattedMulta = formatCurrency(multaValue);
+        setMultaFormatada(formattedMulta);
+      }
+
       setIsInitialLoading(false);
     }
   }, [initialData, contractId, reset]);
@@ -503,6 +526,23 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
     [setValue]
   );
 
+  // Handle multa change
+  const handleMultaChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const rawValue = e.target.value.replace(/[^\d]/g, "");
+
+      if (rawValue) {
+        const formattedValue = formatCentsAsCurrency(parseInt(rawValue, 10));
+        setMultaFormatada(formattedValue);
+        setValue("multa", formattedValue);
+      } else {
+        setMultaFormatada("");
+        setValue("multa", "");
+      }
+    },
+    [setValue]
+  );
+
   // Calculate valor por parcela
   useEffect(() => {
     if (valorTotal && quantidadeParcelas) {
@@ -554,7 +594,7 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
         dataContrato: data.dataContrato,
         prazo: parseInt(data.prazo, 10),
         rescisao: data.rescisao ? parseInt(data.rescisao, 10) : undefined,
-        multa: data.multa ? parseFloat(data.multa) : undefined,
+        multa: data.multa ? parseCurrency(data.multa) : undefined,
         avisoPrevia: data.avisoPrevia
           ? parseInt(data.avisoPrevia, 10)
           : undefined,
@@ -990,7 +1030,70 @@ export function ContractForm({ initialData, contractId }: ContractFormProps) {
         )}
       </motion.div>
 
-      {/* Section 5: Additional Information */}
+      {/* Section 5: Rescission Terms */}
+      <motion.div variants={sectionVariants} className="space-y-6">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-br from-orange-600 to-orange-700 rounded-xl flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-navy-900">
+              Em caso de rescisão
+            </h3>
+            <p className="text-sm text-navy-600">
+              Condições para término antecipado do contrato
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ModernField
+            label="Aviso Prévio"
+            icon={Clock}
+            error={errors.avisoPrevia?.message}
+            description="Prazo de comunicação para rescisão"
+          >
+            <Controller
+              control={control}
+              name="avisoPrevia"
+              render={({ field }) => (
+                <ModernSelect
+                  value={field.value || ""}
+                  onChange={(e: any) => field.onChange(e.target.value)}
+                >
+                  <option value="">Selecione o prazo</option>
+                  <option value="30">⏰ 30 dias</option>
+                  <option value="60">⏰ 60 dias</option>
+                  <option value="90">⏰ 90 dias</option>
+                  <option value="120">⏰ 120 dias</option>
+                </ModernSelect>
+              )}
+            />
+          </ModernField>
+
+          <ModernField
+            label="Multa"
+            icon={DollarSign}
+            error={errors.multa?.message}
+            description="Valor da multa por rescisão antecipada"
+          >
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-navy-600 font-bold">
+                R$
+              </div>
+              <ModernInput
+                value={multaFormatada}
+                onChange={handleMultaChange}
+                type="text"
+                className="pl-10"
+                placeholder="5.000,00"
+              />
+            </div>
+          </ModernField>
+        </div>
+      </motion.div>
+
+      {/* Section 6: Additional Information */}
       <motion.div variants={sectionVariants} className="space-y-6">
         <div className="flex items-center space-x-3 mb-6">
           <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl flex items-center justify-center">
